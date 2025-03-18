@@ -8,9 +8,9 @@
 
 """Radar Signal Processing Module."""
 import numpy as np
-from scipy import fft
+from scipy.fft import fft, fftshift
 from typing import Optional, Union
-from utils import *
+from .utils import *
 
 # ######################################################################
 # FFT Functions
@@ -34,7 +34,7 @@ def range_fft(adc_cube: np.ndarray, IdxSamples: int = 1, num_workers: Optional[i
         raise ValueError('Input array must have exactly three dimensions.')
 
     # Perform FFT along the range axis
-    range_spectrum = fft.fft(adc_cube, axis=IdxSamples, workers=num_workers)
+    range_spectrum = fft(adc_cube, axis=IdxSamples, workers=num_workers)
     return range_spectrum
 
 def doppler_fft(adc_cube: np.ndarray, IdxChirps: int = 2, num_workers: Optional[int] = None) -> np.ndarray:
@@ -55,7 +55,7 @@ def doppler_fft(adc_cube: np.ndarray, IdxChirps: int = 2, num_workers: Optional[
         raise ValueError('Input array must have exactly three dimensions.')
 
     # Perform FFT along the Doppler axis and shift the zero frequency component to the center
-    doppler_spectrum = fft.fftshift(fft.fft(adc_cube, axis=IdxChirps, workers=num_workers), axes=IdxChirps)
+    doppler_spectrum = fftshift(fft(adc_cube, axis=IdxChirps, workers=num_workers), axes=IdxChirps)
     return doppler_spectrum
 
 def angle_fft(adc_cube: np.ndarray, IdxVirtualAntennas: int = 0, num_workers: Optional[int] = None) -> np.ndarray:
@@ -76,8 +76,8 @@ def angle_fft(adc_cube: np.ndarray, IdxVirtualAntennas: int = 0, num_workers: Op
         raise ValueError('Input array must have exactly three dimensions.')
 
     # Perform FFT along the range axis
-    azimuth_spectrum = fft.fft(adc_cube, axis=IdxVirtualAntennas, workers=num_workers)
-    azimuth_spectrum = fft.fftshift(azimuth_spectrum, axes=IdxVirtualAntennas)
+    azimuth_spectrum = fft(adc_cube, axis=IdxVirtualAntennas, workers=num_workers)
+    azimuth_spectrum = fftshift(azimuth_spectrum, axes=IdxVirtualAntennas)
     return azimuth_spectrum
 
 def range_doppler_fft(adc_cube: np.ndarray, IdxSamples: int = 1, IdxChirps: int = 2, num_workers: Optional[int] = None) -> np.ndarray:
@@ -99,10 +99,10 @@ def range_doppler_fft(adc_cube: np.ndarray, IdxSamples: int = 1, IdxChirps: int 
         raise ValueError('Input array must have exactly three dimensions.')
 
     # Perform Range FFT along the range axis
-    range_spectrum = fft.fft(adc_cube, axis=IdxSamples, workers=num_workers)
+    range_spectrum = fft(adc_cube, axis=IdxSamples, workers=num_workers)
 
     # Perform Doppler FFT along the Doppler axis and shift the zero frequency component to the center
-    range_doppler_spectrum = fft.fftshift(fft.fft(range_spectrum, axis=IdxChirps, workers=num_workers), axes=IdxChirps)
+    range_doppler_spectrum = fftshift(fft(range_spectrum, axis=IdxChirps, workers=num_workers), axes=IdxChirps)
     return range_doppler_spectrum
 
 def range_doppler_azimuth_fft(adc_cube: np.ndarray,
@@ -126,7 +126,7 @@ def range_doppler_azimuth_fft(adc_cube: np.ndarray,
                                representing complex ADC data from the radar sensor.
         IdxSamples (int): Axis index for the range dimension (default: 1).
         IdxChirps (int): Axis index for the Doppler dimension (default: 2).
-        numAngleBins (int): Number of angular bins for azimuth FFT. If this value is greater than
+        numAngleBins (int): Number of angular bins for azimuth  If this value is greater than
                             the size of the virtual antennas dimension, zero-padding will be applied.
 
     Returns:
@@ -150,13 +150,13 @@ def range_doppler_azimuth_fft(adc_cube: np.ndarray,
     padded_adc_cube = np.pad(adc_cube, pad_width=azimuth_padding, mode='constant')
 
     # Perform Range FFT along the range axis
-    range_spectrum = fft.fft(padded_adc_cube, axis=IdxSamples, workers=num_workers)
+    range_spectrum = fft(padded_adc_cube, axis=IdxSamples, workers=num_workers)
 
     # Perform Doppler FFT along the Doppler axis and shift the zero frequency component to the center
-    range_doppler_spectrum = fft.fftshift(fft.fft(range_spectrum, axis=IdxChirps, workers=num_workers), axes=IdxChirps)
+    range_doppler_spectrum = fftshift(fft(range_spectrum, axis=IdxChirps, workers=num_workers), axes=IdxChirps)
 
     # Perform Azimuth FFT along the virtual antennas axis and shift the zero frequency component to the center
-    range_doppler_azimuth_spectrum = fft.fftshift(fft.fft(range_doppler_spectrum, axis=IdxVirtualAntennas, workers=num_workers), axes=IdxVirtualAntennas)
+    range_doppler_azimuth_spectrum = fftshift(fft(range_doppler_spectrum, axis=IdxVirtualAntennas, workers=num_workers), axes=IdxVirtualAntennas)
 
     return range_doppler_azimuth_spectrum
 

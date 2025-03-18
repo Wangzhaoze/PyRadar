@@ -35,7 +35,6 @@ All functions use the speed of light as a default constant, ensuring accuracy in
 
 import numpy as np
 from typing import Optional
-from scipy.fft import fft, fftfreq, fftshift
 
 # Constants
 speedOfLight = 299792458  # Speed of light in meters/second (default constant)

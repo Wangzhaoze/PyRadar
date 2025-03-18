@@ -37,8 +37,8 @@ def show_2D_heat_map(
     # Validate inputs
     if not isinstance(spectrum, np.ndarray):
         raise ValueError('Input spectrum must be a numpy array.')
-    if spectrum.dtype != np.complex128:
-        raise ValueError('Input spectrum must contain complex numbers.')
+    # if np.issubdtype(spectrum.dtype, np.complexfloating) or isinstance(spectrum, complex):
+    #     raise ValueError(f'Input spectrum must contain complex numbers, but it is {spectrum.dtype}.')
     if spectrum.ndim != 2:
         raise ValueError('Input spectrum must be a 2D array.')
 

@@ -49,7 +49,7 @@ class ColoRadarDataset:
         Q = np.float16(data[:, :, :, :, 1])
         adc_samples = I + 1j * Q
 
-        return adc_samples
+        return np.array(adc_samples, dtype=np.complex64)
     
     def load_ccradar(self, frame_idx: int = 0) -> np.ndarray:
         ccradar_dir = os.path.join(self.data_dir, self.scene_id, 'cascade', 'adc_samples', 'data')
@@ -66,7 +66,15 @@ class ColoRadarDataset:
         Q = np.float16(data[:, :, :, :, 1])
         adc_samples = I + 1j * Q
 
+        adc_samples = np.transpose(adc_samples, (0, 1, 3, 2))
+
         return adc_samples
+    
+    def load_ccradar_heatmap(self, frame_idx: int = 0):
+        ccradar_heatmap_dir = os.path.join(self.data_dir, self.scene_id, 'cascade', 'heatmaps', 'data')
+        scradar_heatmap_files = glob.glob(os.path.join(ccradar_heatmap_dir, '*.bin'))
+        heatmap = np.fromfile(scradar_heatmap_files[frame_idx], np.float32)
+        return heatmap
 
 
 
