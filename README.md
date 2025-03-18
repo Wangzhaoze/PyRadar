@@ -7,6 +7,19 @@
     <p>Authors marked with * have contributed equally to this work.</p>
 </div>
 
+
+## Setup Python Environment
+You can setup environment by:
+- Using pip:
+```bash
+source shell/setup_env_no_conda.sh
+```
+- Using conda
+```bash
+source shell/setup_env_conda.sh
+```
+
+
 ## Data
 Raw ADC data from ColoRadr is given as example. More follows
 

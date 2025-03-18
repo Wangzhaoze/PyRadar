@@ -122,43 +122,6 @@ def visualize_point_cloud(
 
     o3d.visualization.draw_geometries(pcd, window_name=title)
 
-
-def visualize_ray_tracing(point_cloud: Union[np.ndarray, list]) -> None:
-    """
-    Visualize the paths that connect the origin point to each point in the point cloud.
-
-    Args:
-        point_cloud (Union[np.ndarray, List[List[float]]]): A list or array of n*3 point cloud.
-    """
-    # Convert the point cloud to a numpy array if it is a list
-    if isinstance(point_cloud, list):
-        point_cloud = np.array(point_cloud)
-
-    # Ensure the point cloud is an n*3 array
-    assert point_cloud.shape[1] == 3, 'Point cloud must be of shape n*3'
-
-    # Convert the point cloud to an Open3D point cloud object
-    pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(point_cloud)
-
-    # Create lines that connect the origin to each point
-    origin = np.array([[0, 0, 0]])
-    points = np.vstack((origin, point_cloud))
-    lines = [[0, i + 1] for i in range(point_cloud.shape[0])]
-
-    # Create a LineSet object
-    line_set = o3d.geometry.LineSet()
-    line_set.points = o3d.utility.Vector3dVector(points)
-    line_set.lines = o3d.utility.Vector2iVector(lines)
-
-    # Optionally, set colors for the lines
-    colors = [[1, 0, 0] for _ in range(len(lines))]  # Red color for all lines
-    line_set.colors = o3d.utility.Vector3dVector(colors)
-
-    # Visualize the point cloud and the lines
-    o3d.visualization.draw_geometries([pcd, line_set, draw_xyz_frame()])
-
-
 def draw_xyz_frame():
     """
     Create an XYZ frame.
