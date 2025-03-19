@@ -8,6 +8,9 @@
 
 """Visualization Tools of Point Cloud."""
 
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import DBSCAN
+from .visual_geometry import *
 from typing import Any, Optional, Union, Tuple
 
 import cv2
@@ -33,12 +36,14 @@ def open3d_pointcloud_to_numpy(pcd: o3d.geometry.PointCloud) -> np.ndarray:
     if isinstance(pcd, o3d.geometry.PointCloud):
         pcd_array = np.asarray(pcd.points)
     else:
-        raise ValueError("Input object should be an open3d.geometry.PointCloud object")
+        raise ValueError('Input object should be an open3d.geometry.PointCloud object')
 
     return pcd_array
 
 
-def numpy_to_open3d_pointcloud(points: np.ndarray, colors: Optional[np.ndarray] = None) -> o3d.geometry.PointCloud:
+def numpy_to_open3d_pointcloud(
+    points: np.ndarray, colors: Optional[np.ndarray] = None
+) -> o3d.geometry.PointCloud:
     """
     Converts a NumPy array to Open3D point cloud data.
 
@@ -56,7 +61,7 @@ def numpy_to_open3d_pointcloud(points: np.ndarray, colors: Optional[np.ndarray] 
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(points)
     else:
-        raise ValueError("Input object should be a numpy.ndarray object")
+        raise ValueError('Input object should be a numpy.ndarray object')
 
     if colors is not None and len(colors) != 0:
         if np.max(colors) > 1:
@@ -91,7 +96,9 @@ def save_point_cloud(pcd: o3d.geometry.PointCloud, save_path: str) -> None:
     o3d.io.write_point_cloud(save_path, pcd)
 
 
-def visualize_point_cloud(pcd: Union[o3d.geometry.PointCloud, list], title="point cloud"):
+def visualize_point_cloud(
+    pcd: Union[o3d.geometry.PointCloud, list], title='point cloud'
+):
     """
     Visualize one or more point clouds.
 
@@ -136,6 +143,7 @@ def draw_obb(pcd: o3d.geometry.PointCloud) -> o3d.geometry.PointCloud:
     bbx = pcd.get_oriented_bounding_box()
     bbx.color = (0, 0, 1)
     return bbx
+
 
 def draw_xyz_frame() -> o3d.geometry.TriangleMesh:
     """
@@ -182,8 +190,12 @@ def merge_point_clouds(point_clouds: list) -> o3d.geometry.PointCloud:
         o3d.geometry.PointCloud: Merged point cloud.
     """
     # Concatenate point coordinates and colors
-    merged_points = np.concatenate([np.asarray(pcd.points) for pcd in point_clouds], axis=0)
-    merged_colors = np.concatenate([np.asarray(pcd.colors) for pcd in point_clouds], axis=0)
+    merged_points = np.concatenate(
+        [np.asarray(pcd.points) for pcd in point_clouds], axis=0
+    )
+    merged_colors = np.concatenate(
+        [np.asarray(pcd.colors) for pcd in point_clouds], axis=0
+    )
 
     # Create a new point cloud
 
@@ -191,7 +203,9 @@ def merge_point_clouds(point_clouds: list) -> o3d.geometry.PointCloud:
 
 
 def sample_point_cloud(
-    input_pcd: o3d.geometry.PointCloud, sample_mask: Optional[np.ndarray] = None, sample_indices: Union[list, np.ndarray] = None
+    input_pcd: o3d.geometry.PointCloud,
+    sample_mask: Optional[np.ndarray] = None,
+    sample_indices: Union[list, np.ndarray] = None,
 ) -> o3d.geometry.PointCloud:
     """
     Sample a point cloud based on a mask or index and return a new point cloud with colors.
@@ -205,19 +219,21 @@ def sample_point_cloud(
     - sampled_pc: Sampled point cloud with colors.
     """
     if sample_mask is not None and sample_indices is not None:
-        raise ValueError("Please provide either sample_mask or sample_indices")
+        raise ValueError('Please provide either sample_mask or sample_indices')
 
     points = np.asarray(input_pcd.points)
     colors = np.asarray(input_pcd.colors)
 
     if sample_mask is not None:
         if len(sample_mask) != len(points):
-            raise ValueError("Length of sample_mask must be the same as the number of points in the input point cloud.")
+            raise ValueError(
+                'Length of sample_mask must be the same as the number of points in the input point cloud.'
+            )
         sampled_indices = np.where(sample_mask)[0]
     elif sample_indices is not None:
         sampled_indices = sample_indices
     else:
-        raise ValueError("Please provide either sample_mask or sample_indices.")
+        raise ValueError('Please provide either sample_mask or sample_indices.')
 
     sampled_points = points[sampled_indices]
     sampled_colors = colors[sampled_indices]
@@ -238,9 +254,9 @@ def pick_points_from_pcd(pcd: Union[list, o3d.geometry.PointCloud]) -> list:
     if isinstance(pcd, list):
         pcd = merge_point_clouds(pcd)
 
-    print("")
-    print("1) Please pick at least three correspondences using [shift + left click]")
-    print("   Press [shift + right click] to undo point picking")
+    print('')
+    print('1) Please pick at least three correspondences using [shift + left click]')
+    print('   Press [shift + right click] to undo point picking')
     print("2) After picking points, press 'Q' to close the window")
 
     vis = o3d.visualization.VisualizerWithEditing()
@@ -248,12 +264,14 @@ def pick_points_from_pcd(pcd: Union[list, o3d.geometry.PointCloud]) -> list:
     vis.add_geometry(pcd)
     vis.run()  # User picks points
     vis.destroy_window()
-    print("")
+    print('')
 
     return vis.get_picked_points()
 
 
-def shift_point_cloud_to_origin(pcd: o3d.geometry.PointCloud) -> o3d.geometry.PointCloud:
+def shift_point_cloud_to_origin(
+    pcd: o3d.geometry.PointCloud,
+) -> o3d.geometry.PointCloud:
     """
     Shift the center of a point cloud to the origin (0, 0, 0).
 
@@ -276,7 +294,11 @@ def shift_point_cloud_to_origin(pcd: o3d.geometry.PointCloud) -> o3d.geometry.Po
 
 
 def draw_3d_bounding_box(
-    image: np.ndarray, corners: np.ndarray, intrinsic: np.ndarray, object_label: Optional[str] = None, color: tuple = (0, 1, 0)
+    image: np.ndarray,
+    corners: np.ndarray,
+    intrinsic: np.ndarray,
+    object_label: Optional[str] = None,
+    color: tuple = (0, 1, 0),
 ) -> np.ndarray:
     """
         7 -------- 4
@@ -308,8 +330,14 @@ def draw_3d_bounding_box(
 
     # Create a larger canvas (padded image)
     try:
-        padded_image = np.zeros((original_height + 2 * padding_y, original_width + 2 * padding_x, 3), dtype=image.dtype)
-        padded_image[padding_y : padding_y + original_height, padding_x : padding_x + original_width] = image
+        padded_image = np.zeros(
+            (original_height + 2 * padding_y, original_width + 2 * padding_x, 3),
+            dtype=image.dtype,
+        )
+        padded_image[
+            padding_y : padding_y + original_height,
+            padding_x : padding_x + original_width,
+        ] = image
 
         # Adjust corners to new canvas
         corners[:, 0] += padding_x
@@ -317,22 +345,45 @@ def draw_3d_bounding_box(
 
         # Define connections between corners of the bounding box
         lines = [
-            (0, 1), (1, 2), (2, 3), (3, 0),  # Lower square
-            (4, 5), (5, 6), (6, 7), (7, 4),  # Upper square
-            (0, 4), (1, 5), (2, 6), (3, 7),  # Vertical lines
-            (0, 7), (3, 4),
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 0),  # Lower square
+            (4, 5),
+            (5, 6),
+            (6, 7),
+            (7, 4),  # Upper square
+            (0, 4),
+            (1, 5),
+            (2, 6),
+            (3, 7),  # Vertical lines
+            (0, 7),
+            (3, 4),
         ]
 
         # Draw lines on the padded image
         for start, end in lines:
             start_point = tuple(corners[start, :2].astype(int))
             end_point = tuple(corners[end, :2].astype(int))
-            cv2.line(padded_image, start_point, end_point, color, 1, lineType=cv2.LINE_AA)
+            cv2.line(
+                padded_image, start_point, end_point, color, 1, lineType=cv2.LINE_AA
+            )
 
         # Draw object label above the bounding box
         if object_label is not None:
-            label_position = (int(corners.mean(axis=0)[0]), int(corners[:, 1].min()) - 5)
-            cv2.putText(padded_image, object_label, label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
+            label_position = (
+                int(corners.mean(axis=0)[0]),
+                int(corners[:, 1].min()) - 5,
+            )
+            cv2.putText(
+                padded_image,
+                object_label,
+                label_position,
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                color,
+                1,
+            )
 
         # Number the corners
         # for idx, corner in enumerate(corners):
@@ -340,13 +391,18 @@ def draw_3d_bounding_box(
         #     cv2.putText(padded_image, str(idx), corner, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 1), 1)
 
         # Crop back to original image dimensions
-        cropped_image = padded_image[padding_y : padding_y + original_height, padding_x : padding_x + original_width]
-    except:
+        cropped_image = padded_image[
+            padding_y : padding_y + original_height,
+            padding_x : padding_x + original_width,
+        ]
+    except BaseException:
         cropped_image = np.copy(image)
     return cropped_image
 
 
-def down_sample_point_cloud(input_pcd: o3d.geometry.PointCloud, total_num_sample: int) -> np.ndarray:
+def down_sample_point_cloud(
+    input_pcd: o3d.geometry.PointCloud, total_num_sample: int
+) -> np.ndarray:
     """
     Sample the input Open3D point cloud by dividing it into a 3D grid and uniformly sampling a specified number of points.
 
@@ -363,7 +419,9 @@ def down_sample_point_cloud(input_pcd: o3d.geometry.PointCloud, total_num_sample
     sample_grid_resolution = (total_num_points / total_num_sample) ** (1 / 3)
 
     # Calculate the grid index for each point
-    grid_indices = np.floor(np.asarray(input_pcd.points) / sample_grid_resolution).astype(int)
+    grid_indices = np.floor(
+        np.asarray(input_pcd.points) / sample_grid_resolution
+    ).astype(int)
 
     # Use a dictionary to store the indices of points in each grid voxel
     grid_points_dict = {}
@@ -381,14 +439,18 @@ def down_sample_point_cloud(input_pcd: o3d.geometry.PointCloud, total_num_sample
     sampled_indices = []
     for grid_index_tuple, point_indices in grid_points_dict.items():
         if len(point_indices) >= sample_count_per_grid:
-            sampled_indices.extend(np.random.choice(point_indices, sample_count_per_grid, replace=False))
+            sampled_indices.extend(
+                np.random.choice(point_indices, sample_count_per_grid, replace=False)
+            )
         else:
             sampled_indices.extend(point_indices)
 
     return np.asarray(sampled_indices)
 
 
-def random_sample_point_cloud(input_pcd: o3d.geometry.PointCloud, total_num_sample: int) -> np.ndarray:
+def random_sample_point_cloud(
+    input_pcd: o3d.geometry.PointCloud, total_num_sample: int
+) -> np.ndarray:
     """
     Randomly sample a specified number of points from a 3D point cloud.
 
@@ -401,12 +463,14 @@ def random_sample_point_cloud(input_pcd: o3d.geometry.PointCloud, total_num_samp
     """
 
     # Generate random indices for sampling without replacement
-    return np.random.choice(len(np.asarray(input_pcd.points)), size=total_num_sample, replace=False)
+    return np.random.choice(
+        len(np.asarray(input_pcd.points)), size=total_num_sample, replace=False
+    )
 
 
-from .visual_geometry import *
-
-def rgbd_to_point_cloud(rgb_image: np.ndarray, depth_image: np.ndarray, intrinsic: np.ndarray) -> o3d.geometry.PointCloud:
+def rgbd_to_point_cloud(
+    rgb_image: np.ndarray, depth_image: np.ndarray, intrinsic: np.ndarray
+) -> o3d.geometry.PointCloud:
     """
     Convert RGB-D images to colored point cloud.
 
@@ -420,16 +484,16 @@ def rgbd_to_point_cloud(rgb_image: np.ndarray, depth_image: np.ndarray, intrinsi
     """
     # Convert depth image to camera coordinate
     points_3d = depth_image_to_camera_coordinate(depth_image, intrinsic)
-    
+
     # Resize RGB image to match depth image size
     rgb_image = cv2.resize(rgb_image, dsize=(640, 480))
-    
+
     # Flatten RGB image to get colors for each point
     colors = rgb_image.reshape((-1, 3))
-    
+
     # Filter out points with zero depth
     colors = colors[depth_image.reshape(-1) != 0]
-    
+
     # Normalize colors if necessary
     if np.max(colors) > 1:
         colors = (colors / np.max(colors)).astype(np.float32)
@@ -438,7 +502,13 @@ def rgbd_to_point_cloud(rgb_image: np.ndarray, depth_image: np.ndarray, intrinsi
     colored_pcd = numpy_to_open3d_pointcloud(points=points_3d, colors=colors)
     return colored_pcd
 
-def point_cloud_to_rgbd(pcd: o3d.geometry.PointCloud, camera_pose: np.ndarray, intrinsic: np.ndarray, view_range: Tuple[int, int] = (192, 256)) -> Tuple[np.ndarray, np.ndarray]:
+
+def point_cloud_to_rgbd(
+    pcd: o3d.geometry.PointCloud,
+    camera_pose: np.ndarray,
+    intrinsic: np.ndarray,
+    view_range: Tuple[int, int] = (192, 256),
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Convert point cloud to RGB-D images.
 
@@ -485,53 +555,51 @@ def point_cloud_to_rgbd(pcd: o3d.geometry.PointCloud, camera_pose: np.ndarray, i
     rgb_image = np.ones((*view_range, 3), dtype=np.float32)
 
     # Populate depth and RGB images with valid data
-    depth_image[v_valid[depth_sort_idx], u_valid[depth_sort_idx]] = depth_valid[depth_sort_idx]
-    rgb_image[v_valid[depth_sort_idx], u_valid[depth_sort_idx]] = color_valid[depth_sort_idx, :]
+    depth_image[v_valid[depth_sort_idx], u_valid[depth_sort_idx]] = depth_valid[
+        depth_sort_idx
+    ]
+    rgb_image[v_valid[depth_sort_idx], u_valid[depth_sort_idx]] = color_valid[
+        depth_sort_idx, :
+    ]
 
     return rgb_image, depth_image
 
-
-
-
-
-
-
-from sklearn.cluster import DBSCAN
-from sklearn.preprocessing import StandardScaler
 
 def filter_segmented_point_cloud(pcd, eps=0.02, min_samples=50):
     # Convert Open3D point cloud to numpy array
     points = np.asarray(pcd.points)
     colors = np.asarray(pcd.colors)
-    
+
     # Scale the point cloud features
     scaler = StandardScaler()
     points_scaled = scaler.fit_transform(points)
-    
+
     # Apply DBSCAN clustering
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
     labels = dbscan.fit_predict(points_scaled)
-    
+
     # Find the largest cluster
     largest_cluster_label = np.argmax(np.bincount(labels[labels != -1]))
-    
+
     # Extract points belonging to the largest cluster
     largest_cluster_indices = np.where(labels == largest_cluster_label)[0]
     largest_cluster_points = points[largest_cluster_indices]
     colors = colors[largest_cluster_indices]
-    
+
     # Create an Open3D point cloud for the largest cluster
     largest_cluster_pcd = o3d.geometry.PointCloud()
     largest_cluster_pcd.points = o3d.utility.Vector3dVector(largest_cluster_points)
     largest_cluster_pcd.colors = o3d.utility.Vector3dVector(colors)
 
-    
     return largest_cluster_pcd
 
-def icp_registration(source_points, target_points, max_correspondence_distance=0.00001, max_iterations=50):
+
+def icp_registration(
+    source_points, target_points, max_correspondence_distance=0.00001, max_iterations=50
+):
     """
     Perform ICP registration between two point clouds.
-    
+
     source_points: numpy array of shape (N, 3)
         Source point cloud.
     target_points: numpy array of shape (M, 3)
@@ -540,7 +608,7 @@ def icp_registration(source_points, target_points, max_correspondence_distance=0
         Maximum correspondence distance to consider a point pair as a match (default is 0.05).
     max_iterations: int, optional
         Maximum number of iterations for ICP (default is 50).
-        
+
     Returns:
         transformation: numpy array of shape (4, 4)
             Transformation matrix that aligns the source point cloud to the target point cloud.
@@ -553,9 +621,12 @@ def icp_registration(source_points, target_points, max_correspondence_distance=0
 
     # Perform ICP registration
     icp_result = o3d.pipelines.registration.registration_icp(
-        source_cloud, target_cloud, max_correspondence_distance, np.identity(4),
+        source_cloud,
+        target_cloud,
+        max_correspondence_distance,
+        np.identity(4),
         o3d.pipelines.registration.TransformationEstimationPointToPoint(),
-        o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=max_iterations)
+        o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=max_iterations),
     )
 
     return icp_result.transformation

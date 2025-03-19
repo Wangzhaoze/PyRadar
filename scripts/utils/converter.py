@@ -16,6 +16,7 @@ from typing import Optional
 # Constants
 speedOfLight = 299792458  # Speed of light in meters/second (default constant)
 
+
 def range_resolution(chirpBandwidth: float) -> float:
     """
     Calculate the range resolution of the radar.
@@ -33,6 +34,7 @@ def range_resolution(chirpBandwidth: float) -> float:
             B = Chirp bandwidth in Hz
     """
     return speedOfLight / (2 * chirpBandwidth)
+
 
 def range_maximum(adcSampleRate: float, chirpSlope: float) -> float:
     """
@@ -54,9 +56,10 @@ def range_maximum(adcSampleRate: float, chirpSlope: float) -> float:
     """
     return speedOfLight * adcSampleRate / (2 * chirpSlope)
 
-def range_bins(numSamplesPerChirp: int,
-               adcSampleRate: float,
-               chirpSlope: float) -> np.ndarray:
+
+def range_bins(
+    numSamplesPerChirp: int, adcSampleRate: float, chirpSlope: float
+) -> np.ndarray:
     """
     Calculate the range bins for the radar based on maximum range.
 
@@ -76,7 +79,10 @@ def range_bins(numSamplesPerChirp: int,
 
     return np.linspace(0, range_max, numSamplesPerChirp)
 
-def velocity_resolution(carrierFrequency: float, numChirpsPerFrame: int, chirpTime: float) -> float:
+
+def velocity_resolution(
+    carrierFrequency: float, numChirpsPerFrame: int, chirpTime: float
+) -> float:
     """
     Calculate the velocity resolution of the radar.
 
@@ -98,6 +104,7 @@ def velocity_resolution(carrierFrequency: float, numChirpsPerFrame: int, chirpTi
     waveLength = speedOfLight / carrierFrequency
     return waveLength / (2 * numChirpsPerFrame * chirpTime)
 
+
 def velocity_maximum(carrierFrequency: float, chirpTime: float) -> float:
     """
     Calculate the maximum detectable velocity of the radar.
@@ -118,9 +125,10 @@ def velocity_maximum(carrierFrequency: float, chirpTime: float) -> float:
     waveLength = speedOfLight / carrierFrequency
     return waveLength / (4 * chirpTime)
 
-def velocity_bins(numChirpsPerFrame: int,
-                  carrierFrequency: float,
-                  chirpTime: float) -> np.ndarray:
+
+def velocity_bins(
+    numChirpsPerFrame: int, carrierFrequency: float, chirpTime: float
+) -> np.ndarray:
     """
     Calculate the velocity bins for the radar.
 
@@ -143,7 +151,9 @@ def velocity_bins(numChirpsPerFrame: int,
     return np.linspace(-vel_max, vel_max, numChirpsPerFrame)
 
 
-def azimuth_resolution(carrierFrequency: float, numVirtualAntennas: int, antennaSpacing: float) -> float:
+def azimuth_resolution(
+    carrierFrequency: float, numVirtualAntennas: int, antennaSpacing: float
+) -> float:
     """
     Calculate the azimuth resolution of the radar.
 
@@ -165,6 +175,7 @@ def azimuth_resolution(carrierFrequency: float, numVirtualAntennas: int, antenna
     waveLength = speedOfLight / carrierFrequency
     return waveLength / (numVirtualAntennas * antennaSpacing)
 
+
 def azimuth_maximum(carrierFrequency: float, antennaSpacing: float) -> float:
     """
     Calculate the maximum detectable azimuth angle of the radar.
@@ -185,9 +196,10 @@ def azimuth_maximum(carrierFrequency: float, antennaSpacing: float) -> float:
     waveLength = speedOfLight / carrierFrequency
     return np.arcsin(waveLength / (2 * antennaSpacing))
 
-def azimuth_bins(numAzimuthBins: int,
-                 carrierFrequency: float,
-                 antennaSpacing: float) -> np.ndarray:
+
+def azimuth_bins(
+    numAzimuthBins: int, carrierFrequency: float, antennaSpacing: float
+) -> np.ndarray:
     """
     Calculate the azimuth bins for the radar.
 
@@ -215,7 +227,8 @@ def azimuth_bins(numAzimuthBins: int,
 
 # from radar_sensor_configs import *
 # def range_FFT_freq():
-#     return np.arange(0, numSamplesPerChirp)*(adcSampleRate)/numSamplesPerChirp
+# return np.arange(0,
+# numSamplesPerChirp)*(adcSampleRate)/numSamplesPerChirp
 
 # def freq2range():
 #     return f  * speedOfLight/(2*chirpSlope)

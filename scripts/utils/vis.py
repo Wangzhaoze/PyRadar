@@ -68,5 +68,3 @@ def show_2D_heat_map(
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.show()
-
-

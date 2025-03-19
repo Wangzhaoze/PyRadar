@@ -10,8 +10,6 @@ repos:
         description: "Check that YAML files are valid"
       - id: double-quote-string-fixer
         description: "Fix double quotes in strings"
-      - id: name-tests-test
-        description: "Ensure test names are valid (for Python)"
       - id: requirements-txt-fixer
         description: "Fix issues in requirements.txt files"
       - id: check-ast
@@ -23,12 +21,12 @@ repos:
       - id: check-merge-conflict
         description: "Detect unresolved merge conflicts"
 
-  - repo: https://github.com/psf/black
-    rev: 23.1.0
-    hooks:
-      - id: black
-        language_version: python3
-        description: "Automatically format Python code using black"
+  # - repo: https://github.com/psf/black
+  #   rev: 23.1.0
+  #   hooks:
+  #     - id: black
+  #       language_version: python3
+  #       description: "Automatically format Python code using black"
 
   # - repo: https://github.com/PyCQA/pydocstyle
   #   rev: 6.3.0
@@ -47,9 +45,9 @@ repos:
   #         - "--add-ignore=D401" # Ignore first line imperative mood
   #       description: "Relaxed docstring enforcement"
 
-  - repo: https://github.com/pre-commit/mirrors-autopep8
-    rev: v1.7.0
-    hooks:
-      - id: autopep8
-        args: ["--in-place", "--aggressive", "--recursive"]
-        description: "Automatically fix Python code style"
+  # - repo: https://github.com/pre-commit/mirrors-autopep8
+  #   rev: v1.7.0
+  #   hooks:
+  #     - id: autopep8
+  #       args: ["--in-place", "--aggressive", "--recursive"]
+  #       description: "Automatically fix Python code style"

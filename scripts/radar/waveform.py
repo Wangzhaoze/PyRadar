@@ -6,7 +6,8 @@
 # @File    : waveform.py
 # @IDE     : vscode
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, field, asdict
+from typing import Optional
 from tabulate import tabulate
 import numpy as np
 import matplotlib.pyplot as plt
@@ -66,9 +67,21 @@ class WaveForm:
 
         except Exception as e:
             # Raise a ValueError with details if the file cannot be loaded
-            raise ValueError(f'Cannot load chirp configurations from file {filename}: {e}')
+            raise ValueError(
+                f'Cannot load chirp configurations from file {filename}: {e}'
+            )
 
     def show(self) -> None:
+        return NotImplementedError
+
+    @property
+    def Bandwidth(self) -> float:
+        """Calculate and return the bandwidth of the signal in Hz."""
+        return NotImplementedError
+
+    @property
+    def waveLength(self) -> float:
+        """Calculate and return the wavelength of the signal."""
         return NotImplementedError
 
 
@@ -79,19 +92,35 @@ class FMCW(WaveForm):
     bandwidth and chirp details.
     """
 
-    chirpDuration: float  # Duration of one chirp (in seconds)
-    chirpSlope: float  # Chirp slope (Hz/s)
-    startFrequency: float  # Start frequency (Hz)
+    chirpDuration: Optional[float] = field(
+        default=None
+    )  # Duration of one chirp (in seconds)
+    chirpSlope: Optional[float] = field(default=None)  # Chirp slope (Hz/s)
+    startFrequency: Optional[float] = field(default=None)  # Start frequency (Hz)
+    bandwidth: Optional[float] = field(default=None)  # Bandwidth of the signal
+    waveLength: Optional[float] = field(default=None)  # Wavelength of the signal
 
-    @property
-    def Bandwidth(self) -> float:
-        """Calculate and return the bandwidth of the signal in Hz."""
-        return self.chirpSlope * self.chirpDuration
+    def __post_init__(self):
+        if self.chirpDuration is None:
+            self.chirpDuration = self.bandwidth / self.chirpSlope
+        if self.chirpSlope is None:
+            self.chirpSlope = self.bandwidth / self.chirpDuration
+        if self.startFrequency is None:
+            self.startFrequency = C / self.waveLength
+        if self.bandwidth is None:
+            self.bandwidth = self.chirpSlope * self.chirpDuration
+        if self.waveLength is None:
+            self.waveLength = C / self.startFrequency
 
-    @property
-    def waveLength(self) -> float:
-        """Calculate and return the wavelength of the signal."""
-        return C / self.startFrequency
+    # @property
+    # def Bandwidth(self) -> float:
+    #     """Calculate and return the bandwidth of the signal in Hz."""
+    #     return self.chirpSlope * self.chirpDuration
+
+    # @property
+    # def waveLength(self) -> float:
+    #     """Calculate and return the wavelength of the signal."""
+    #     return C / self.startFrequency
 
     def show(self) -> None:
         numChirps = 5
@@ -129,4 +158,3 @@ class FMCW(WaveForm):
 
         # Show the plot
         plt.show()
-

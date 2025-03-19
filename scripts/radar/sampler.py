@@ -6,7 +6,8 @@
 # @File    : sampler.py
 # @IDE     : vscode
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Optional
 
 
 @dataclass
@@ -15,16 +16,26 @@ class Sampler:
     Parameters related to ADC sampling, including sample rate and sample details.
     """
 
-    numChirpsperFrame: int = 255  # Number of chirps per frame
-    numSamplesPerChirps: int = 255  # Number of samples per chirp
-    frameDuration: float = 0.005  # Duration of one frame (in seconds)
+    numChirpsperFrame: Optional[int] = field(default=None)  # Number of chirps per frame
+    numSamplesPerChirps: Optional[int] = field(
+        default=None
+    )  # Number of samples per chirp
+    frameDuration: Optional[float] = field(
+        default=None
+    )  # Duration of one frame (in seconds)
+    chirpDuration: Optional[float] = field(
+        default=None
+    )  # Duration of each chirp (in seconds)
+    adcSampleRate: Optional[float] = field(default=None)  # ADC sample rate
 
-    @property
-    def chirpDuration(self) -> float:
-        """Calculate the duration of each chirp (in seconds)."""
-        return self.frameDuration / self.numChirpsperFrame
-
-    @property
-    def adcSampleRate(self) -> float:
-        """Calculate and return the ADC sample rate."""
-        return self.numSamplesPerChirps / self.chirpDuration
+    def __post_init__(self):
+        if self.numChirpsperFrame is None:
+            self.numChirpsperFrame = self.frameDuration / self.chirpDuration
+        if self.numSamplesPerChirps is None:
+            self.numSamplesPerChirps = self.adcSampleRate * self.chirpDuration
+        if self.frameDuration is None:
+            self.frameDuration = self.numChirpsperFrame * self.chirpDuration
+        if self.chirpDuration is None:
+            self.chirpDuration = self.frameDuration / self.numChirpsperFrame
+        if self.adcSampleRate is None:
+            self.adcSampleRate = self.numSamplesPerChirps / self.chirpDuration

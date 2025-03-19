@@ -3,7 +3,7 @@
 num_rx 4
 num_tx 3
 F_design 76.8
-rx 0 0 0 
+rx 0 0 0
 rx 1 1 0
 rx 2 2 0
 rx 3 3 0
