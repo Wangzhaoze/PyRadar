@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# @Time    : 2024-09-27
+# @Author  : Zhaoze Wang
+# @Site    : https://github.com/Wangzhaoze/scikit-radar
+# @File    : vis.py
+# @IDE     : vscode
+
 """Visualization Tools of Radar Signal."""
 
 import matplotlib.pyplot as plt
@@ -62,71 +70,3 @@ def show_2D_heat_map(
     plt.show()
 
 
-def open3d_pointcloud_to_numpy(pcd):
-    """
-    Convert Open3D point cloud to numpy array.
-
-    Args:
-        pcd (open3d.geometry.PointCloud): The Open3D point cloud.
-
-    Returns:
-        np.ndarray: The converted numpy array.
-    """
-    if isinstance(pcd, o3d.geometry.PointCloud):
-        pcd_array = np.asarray(pcd.points)
-    else:
-        raise ValueError('Input object should be an open3d.geometry.PointCloud object')
-
-    return pcd_array
-
-
-def numpy_to_open3d_pointcloud(np_points):
-    """
-    Convert numpy array to Open3D point cloud.
-
-    Args:
-        np_points (np.ndarray): The numpy array of points.
-
-    Returns:
-        open3d.geometry.PointCloud: The created Open3D point cloud.
-    """
-    if isinstance(np_points, np.ndarray):
-        pcd = o3d.geometry.PointCloud()
-        pcd.points = o3d.utility.Vector3dVector(np_points)
-    else:
-        raise ValueError('Input object should be a numpy.ndarray object')
-
-    if colors is not None and len(colors) != 0:
-        if np.max(colors) > 1:
-            colors = (colors / np.max(colors)).astype(np.float32)
-        pcd.colors = o3d.utility.Vector3dVector(colors)
-
-    return pcd
-
-
-def visualize_point_cloud(
-    pcd: Union[o3d.geometry.PointCloud, list], title='point cloud'
-):
-    """
-    Visualize one or more point clouds.
-
-    Args:
-        pcd (Union[o3d.geometry.PointCloud, list]): Point cloud or a list of point clouds.
-        title (str): Title for the visualization window.
-    """
-    # Visualize point cloud
-    if isinstance(pcd, list):
-        pass  # Placeholder for handling multiple point clouds
-    else:
-        pcd = [pcd]
-
-    o3d.visualization.draw_geometries(pcd, window_name=title)
-
-def draw_xyz_frame():
-    """
-    Create an XYZ frame.
-
-    Returns:
-        open3d.geometry.TriangleMesh: The created XYZ frame.
-    """
-    return o3d.geometry.TriangleMesh.create_coordinate_frame()

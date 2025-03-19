@@ -3,34 +3,11 @@
 # @Time    : 2024-09-27
 # @Author  : Zhaoze Wang
 # @Site    : https://github.com/Wangzhaoze/scikit-radar
-# @File    : utils.py
+# @File    : converter.py
 # @IDE     : vscode
 
 """
 Radar Signal Processing Module
-
-This module provides functions for radar signal processing and simulation applications.
-It includes computations for radar parameters such as:
-
-- **Range resolution**: Determines the ability of the radar to distinguish two targets close in range.
-- **Maximum range**: The farthest distance a radar can detect an object.
-- **Velocity resolution**: The ability of the radar to distinguish two targets moving at similar speeds.
-- **Maximum velocity**: The highest detectable velocity without ambiguity.
-- **Azimuth resolution**: The angular resolution of the radar in the horizontal plane.
-- **Maximum azimuth**: The maximum detectable azimuth angle without ambiguity.
-
-Constants:
-    SPEED_OF_LIGHT: The speed of light in a vacuum (299,792,458 m/s), used in radar calculations.
-
-Functions:
-    - `get_range_resolution`: Computes the range resolution based on the chirp bandwidth.
-    - `get_max_range`: Determines the maximum range based on ADC sampling rate and chirp slope.
-    - `get_velocity_resolution`: Calculates the velocity resolution using carrier frequency, number of chirps per frame, and chirp duration.
-    - `get_max_velocity`: Computes the maximum detectable velocity for a given carrier frequency and chirp duration.
-    - `get_azimuth_resolution`: Determines the azimuth resolution based on carrier frequency, number of virtual antennas, and antenna spacing.
-    - `get_max_azimuth`: Computes the maximum azimuth angle detectable without ambiguity.
-
-All functions use the speed of light as a default constant, ensuring accuracy in radar signal processing calculations.
 """
 
 import numpy as np

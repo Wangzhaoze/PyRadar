@@ -10,7 +10,7 @@
 import numpy as np
 from scipy.fft import fft, fftshift
 from typing import Optional, Union
-from .utils import *
+from ..utils import *
 
 # ######################################################################
 # FFT Functions

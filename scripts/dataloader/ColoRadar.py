@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# @Time    : 2024-11-28
+# @Author  : Zhaoze Wang
+# @Site    : https://github.com/Wangzhaoze/scikit-radar
+# @File    : ColoRadar.py
+# @IDE     : vscode
+
 import os
 import glob
 from typing import Optional, Union
