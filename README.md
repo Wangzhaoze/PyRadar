@@ -25,12 +25,62 @@ Raw ADC data from ColoRadr is given as example. More follows
 
 ## TODO
 
-- [ ] Window FFT (Rec., Hann, Hamming)
-- [ ] 2D/3D CFAR variant
-- [ ] MUSIC
-- [ ] CPU/GPU acceleration
-- [ ] CI Test and pre-commit
-- [ ] Radar Antenna visualization
+<table>
+  <thead>
+    <tr>
+      <th>Task</th>
+      <th>Files</th>
+      <th>Assigned To</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Window FFT (Rec., Hann, Hamming)</td>
+      <td><a href="./sripts/rsp/rsp">sripts/rsp/rsp</a></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>2D/3D CFAR variant</td>
+      <td><a href="./sripts/rsp/rsp">sripts/rsp/rsp</a></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>MUSIC</td>
+      <td><a href="./sripts/rsp/rsp">sripts/rsp/rsp</a></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>CPU/GPU acceleration</td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>CI Test and pre-commit</td>
+      <td><a href="./.github/workflow/">.github/workflow/</a></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Complete radar and radar config</td>
+      <td><a href="./sripts/radar">sripts/radar</a></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Radar Antenna visualization</td>
+      <td><a href="./sripts/utils/vis">sripts/utils/vis</a></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Update author link</td>
+      <td><a href="./README.md">README</a></td>
+      <td><a href="https://github.com/changxu-zhang">@changxu-zhang</a></td>
+    </tr>
+    <!-- <tr>
+      <td>-</td>
+      <td><a href="-">-</a></td>
+      <td><a href="-">-</a></td>
+    </tr> -->
+  </tbody>
+</table>
 
 ## License
 
