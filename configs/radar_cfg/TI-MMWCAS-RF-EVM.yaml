@@ -1,0 +1,8 @@
+waveform:
+  _target_: scripts.radar.waveform.FMCW
+
+sampler:
+  _target_: scripts.radar.sampler.FMCW
+
+transceiver:
+  _target_: scripts.radar.transceiver.FMCW
