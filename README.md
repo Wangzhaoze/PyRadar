@@ -2,7 +2,7 @@
     <h1>scikit-radar: A Toolbox for FMCW Radar Signal Processing and Simulation</h1>
     <p>
         <a href="https://wangzhaoze.github.io/" target="_blank">Zhaoze Wang</a><sup>*</sup>,
-        <a href="SECOND AUTHOR PERSONAL LINK" target="_blank">Changxu Zhang</a><sup>*</sup>,
+        <a href="https://github.com/changxu-zhang" target="_blank">Changxu Zhang</a><sup>*</sup>,
     </p>
     <p>Authors marked with * have contributed equally to this work.</p>
 </div>
@@ -45,6 +45,11 @@ Raw ADC data from ColoRadr is given as example. More follows
       <td></td>
     </tr>
     <tr>
+      <td>DBSCAN</td>
+      <td><a href="./sripts/rsp/rsp">sripts/rsp/rsp</a></td>
+      <td></td>
+    </tr>
+    <tr>
       <td>MUSIC</td>
       <td><a href="./sripts/rsp/rsp">sripts/rsp/rsp</a></td>
       <td></td>
@@ -70,7 +75,7 @@ Raw ADC data from ColoRadr is given as example. More follows
       <td></td>
     </tr>
     <tr>
-      <td>Update author link</td>
+      <td><del>Update author link</td>
       <td><a href="./README.md">README</a></td>
       <td><a href="https://github.com/changxu-zhang">@changxu-zhang</a></td>
     </tr>
