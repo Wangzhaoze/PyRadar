@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyradar"
+version = "0.1.0"
+description = "A Python radar signal processing library with optional C++ acceleration"
+authors = [
+    { name = "Zhaoze Wang", email = "wangzhaoze@outlook.com" }
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.9"
+
+dependencies = [
+    "matplotlib",
+    "numpy",
+    "open3d",
+    "pillow",
+    "pre-commit",
+    "pyparsing",
+    "pyyaml",
+    "scipy",
+    "tabulate"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/Wangzhaoze/pyradar"
+"Bug Tracker" = "https://github.com/Wangzhaoze/pyradar/issues"
+
+[tool.setuptools]
+package-dir = {"" = "pyradar"}
+
+[tool.setuptools.packages.find]
+where = ["pyradar"]
+
+
+[tool.setuptools.package-data]
+"pyradar" = ["*.so"]
