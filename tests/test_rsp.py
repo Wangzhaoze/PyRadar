@@ -9,7 +9,7 @@
 import unittest
 import numpy as np
 from scipy.fft import fft
-from scripts.rsp.rsp import (
+from pyradar.rsp import (
     range_fft,
 )  # Update this import based on your actual module name
 
