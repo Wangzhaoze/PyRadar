@@ -1,5 +1,5 @@
 <div align="center">
-    <h1>scikit-radar: A Toolbox for FMCW Radar Signal Processing and Simulation</h1>
+    <h1>pyradar: A Toolbox for FMCW Radar Signal Processing and Simulation</h1>
     <p>
         <a href="https://wangzhaoze.github.io/" target="_blank">Zhaoze Wang</a><sup>*</sup>,
         <a href="https://github.com/changxu-zhang" target="_blank">Changxu Zhang</a><sup>*</sup>,
