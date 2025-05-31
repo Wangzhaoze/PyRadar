@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2023-07-22
 # @Author  : Zhaoze Wang
-# @Site    : https://github.com/Wangzhaoze/scikit-radar
+# @Site    : https://github.com/Wangzhaoze/pyradar
 # @File    : pcd.py
 # @IDE     : vscode
 

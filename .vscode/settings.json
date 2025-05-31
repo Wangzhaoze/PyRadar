@@ -1,5 +1,5 @@
 {
-    "cmake.sourceDirectory": "C:/Users/Patrick/OneDrive/Desktop/scikit-radar/src",
+    "cmake.sourceDirectory": "C:/Users/Patrick/OneDrive/Desktop/pyradar/src",
     "python.testing.unittestArgs": [
         "-v",
         "-s",

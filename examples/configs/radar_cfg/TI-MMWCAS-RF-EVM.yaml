@@ -1,19 +1,19 @@
-_target_: scripts.radar.Radar
+_target_: pyradar.radar.Radar
 
 waveform:
-  _target_: scripts.radar.waveform.FMCW
+  _target_: pyradar.radar.waveform.FMCW
   chirpDuration: 4.99999987369e-06
   chirpSlope: 7.90000010527e+13
   startFrequency: 76999999488.0
 
 sampler:
-  _target_: scripts.radar.sampler.Sampler
+  _target_: pyradar.radar.sampler.Sampler
   numSamplesPerChirps: 256
   numChirpsperFrame: 16
   adcSampleRate: 8000000
   chirpDuration: 4.99999987369e-06
 
 transceivers:
-  _target_: scripts.radar.transceivers.Transceivers
+  _target_: pyradar.radar.transceivers.Transceivers
   numTX: 12
   numRX: 16

@@ -3,7 +3,7 @@
 /*
  * @Time    : ${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE}
  * @Author  : <Your Name>
- * @Site    : https://github.com/Wangzhaoze/scikit-radar
+ * @Site    : https://github.com/Wangzhaoze/pyradar
  * @File    : ${filename}
  * @IDE     : vscode
  */

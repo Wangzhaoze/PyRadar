@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2024-11-28
 # @Author  : Zhaoze Wang
-# @Site    : https://github.com/Wangzhaoze/scikit-radar
+# @Site    : https://github.com/Wangzhaoze/pyradar
 # @File    : waveform.py
 # @IDE     : vscode
 

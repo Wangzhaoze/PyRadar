@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2024-11-28
 # @Author  : Zhaoze Wang
-# @Site    : https://github.com/Wangzhaoze/scikit-radar
+# @Site    : https://github.com/Wangzhaoze/pyradar
 # @File    : radar.py
 # @IDE     : vscode
 
@@ -24,7 +24,7 @@ from omegaconf import DictConfig
 
 
 class RadarConfig(DictConfig):
-    _target_: str = 'scripts.radar.Radar'
+    _target_: str = 'pyradar.radar.Radar'
     name = 'Radar'
     waveform: DictConfig
     sampler: DictConfig

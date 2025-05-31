@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2024-09-27
 # @Author  : Zhaoze Wang
-# @Site    : https://github.com/Wangzhaoze/scikit-radar
+# @Site    : https://github.com/Wangzhaoze/pyradar
 # @File    : test_rsp.py
 # @IDE     : vscode
 
