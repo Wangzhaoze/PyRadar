@@ -1,5 +1,12 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = [
+    "setuptools>=42",
+    "wheel",
+    "cython>=0.29.0",
+    "numpy>=1.19.0",
+    "pybind11>=2.6.0; implementation_name=='cpython'",
+    "cmake>=3.12; implementation_name=='cpython'"
+]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -30,10 +37,10 @@ dependencies = [
 "Bug Tracker" = "https://github.com/Wangzhaoze/pyradar/issues"
 
 [tool.setuptools]
-package-dir = {"" = "pyradar"}
+package-dir = {"" = "."}  # 设置源代码就在当前目录
 
 [tool.setuptools.packages.find]
-where = ["pyradar"]
+where = ["."]
 
 
 [tool.setuptools.package-data]
