@@ -13,7 +13,7 @@ from typing import Optional, Union
 import open3d as o3d
 
 import numpy as np
-from rsp.fft import range_doppler_fft, range_doppler_azimuth_fft
+from pyradar_sandbox.rsp.fft import range_doppler_fft, range_doppler_azimuth_fft
 
 
 def show_2D_heat_map(

@@ -1,9 +1,0 @@
-matplotlib
-numpy
-open3d
-pillow
-pre-commit
-pyparsing
-pyyaml
-scipy
-tabulate
