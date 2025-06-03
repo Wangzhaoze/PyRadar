@@ -9,36 +9,12 @@
 import unittest
 import numpy as np
 from scipy.fft import fft
-from pyradar.rsp import (
+from pyradar.rsp.fft import (
     range_fft,
 )  # Update this import based on your actual module name
 
 
 class TestRangeFFT(unittest.TestCase):
-    # def test_range_fft_valid_input(self):
-    #     """
-    #     Test case for performing FFT with a valid 3D numpy array input.
-    #     """
-    #     adc_cube = np.random.rand(
-    #         2, 4, 8
-    #     )  # Example dimensions: [antennas, chirps, samples]
-    #     fft_result = range_fft(adc_cube)
-
-    #     # Manually calculate the expected result using scipy's fft
-    #     expected_result = fft(adc_cube, axis=2)
-
-    #     # Check if the function output matches the expected result
-    #     np.testing.assert_array_almost_equal(
-    #         fft_result,
-    #         expected_result,
-    #         decimal=6,
-    #         err_msg="The FFT result does not match the expected output",
-    #     )
-
-    #     # Verify the output shape
-    #     self.assertEqual(
-    #         fft_result.shape, adc_cube.shape, "The output shape of the FFT is incorrect"
-    #     )
 
     def test_range_fft_invalid_type(self):
         """
