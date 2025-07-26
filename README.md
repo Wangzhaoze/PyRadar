@@ -36,22 +36,27 @@ Raw ADC data from ColoRadr is given as example. More follows
   <tbody>
     <tr>
       <td>Window FFT (Rec., Hann, Hamming)</td>
-      <td><a href="./sripts/rsp/rsp">sripts/rsp/rsp</a></td>
+      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
       <td></td>
     </tr>
     <tr>
       <td>2D/3D CFAR variant</td>
-      <td><a href="./sripts/rsp/rsp">sripts/rsp/rsp</a></td>
+      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
       <td></td>
     </tr>
     <tr>
       <td>DBSCAN</td>
-      <td><a href="./sripts/rsp/rsp">sripts/rsp/rsp</a></td>
+      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
       <td></td>
     </tr>
     <tr>
       <td>MUSIC</td>
-      <td><a href="./sripts/rsp/rsp">sripts/rsp/rsp</a></td>
+      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Beamforming</td>
+      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
       <td></td>
     </tr>
     <tr>
@@ -99,8 +104,10 @@ In this code, we use the subset of **[ColoRadar](https://arpg.github.io/colorada
 - Wang, Yizhou, Zhongyu Jiang, Yudong Li, Jenq-Neng Hwang, Guanbin Xing, and Hui Liu. “RODNet: A Real-Time Radar Object Detection Network Cross-Supervised by Camera-Radar Fused Object 3D Localization.” IEEE Journal of Selected Topics in Signal Processing 15, no. 4 (2021): 954-967.
 
 
-# 安装到环境
+## Build via pip
+```bash
 pip install .
 python -m build
 pip install dist/pyradar-0.1.0-py3-none-any.whl
 python -c "import pyradar; print(pyradar.__file__)"
+```
