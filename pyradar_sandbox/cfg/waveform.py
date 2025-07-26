@@ -74,70 +74,58 @@ class WaveForm:
     def show(self) -> None:
         return NotImplementedError
 
-    @property
-    def Bandwidth(self) -> float:
-        """Calculate and return the bandwidth of the signal in Hz."""
-        return NotImplementedError
-
-    @property
-    def waveLength(self) -> float:
-        """Calculate and return the wavelength of the signal."""
-        return NotImplementedError
-
-
 @dataclass
 class FMCW(WaveForm):
     """
-    Configuration settings for transmitted chirps, including parameters such as
-    bandwidth and chirp details.
+    FMCW waveform configuration settings for transmitted chirps,
+    including bandwidth, duration, and frequency sweep parameters.
     """
 
-    chirpDuration: Optional[float] = field(
-        default=None
-    )  # Duration of one chirp (in seconds)
-    chirpSlope: Optional[float] = field(default=None)  # Chirp slope (Hz/s)
-    startFrequency: Optional[float] = field(default=None)  # Start frequency (Hz)
-    bandwidth: Optional[float] = field(default=None)  # Bandwidth of the signal
-    waveLength: Optional[float] = field(default=None)  # Wavelength of the signal
+    chirpDuration: Optional[float] = field(default=None)       # Duration of one chirp (in seconds)
+    chirpSlope: Optional[float] = field(default=None)          # Chirp slope (Hz/s)
+    startFrequency: Optional[float] = field(default=77e9)      # Start frequency (Hz)
+    bandwidth: Optional[float] = field(default=None)           # Bandwidth (Hz)
+    waveLength: Optional[float] = field(default=None)          # Wavelength (meters)
+    adcStartTime: Optional[float] = field(default=0)        # ADC start time (s)
+    chirpIdleTime: Optional[float] = field(default=0)       # Chirp idle time (s)
+    rampDuration: Optional[float] = field(default=None)        # Frequency ramp duration (s)
 
     def __post_init__(self):
-        if self.chirpDuration is None:
+        # Auto-calculate missing parameters
+        if self.bandwidth is not None and self.chirpSlope is not None and self.chirpDuration is None:
             self.chirpDuration = self.bandwidth / self.chirpSlope
-        if self.chirpSlope is None:
+        elif self.bandwidth is not None and self.chirpDuration is not None and self.chirpSlope is None:
             self.chirpSlope = self.bandwidth / self.chirpDuration
-        if self.startFrequency is None:
-            self.startFrequency = C / self.waveLength
-        if self.bandwidth is None:
+        elif self.chirpSlope is not None and self.chirpDuration is not None and self.bandwidth is None:
             self.bandwidth = self.chirpSlope * self.chirpDuration
-        if self.waveLength is None:
+
+        if self.waveLength is not None and self.startFrequency is None:
+            self.startFrequency = C / self.waveLength
+        elif self.startFrequency is not None and self.waveLength is None:
             self.waveLength = C / self.startFrequency
 
-    # @property
-    # def Bandwidth(self) -> float:
-    #     """Calculate and return the bandwidth of the signal in Hz."""
-    #     return self.chirpSlope * self.chirpDuration
-
-    # @property
-    # def waveLength(self) -> float:
-    #     """Calculate and return the wavelength of the signal."""
-    #     return C / self.startFrequency
+        # Validate required parameters
+        required_params = [self.chirpDuration, self.chirpSlope, self.startFrequency]
+        if any(p is None for p in required_params):
+            raise ValueError("Missing required chirp parameters. Please set at least bandwidth & slope or duration.")
 
     def show(self) -> None:
         numChirps = 5
         t = np.linspace(0, self.chirpDuration * numChirps, 100 * numChirps)
         k = np.tile(np.linspace(0, self.chirpDuration, 100), reps=numChirps)
 
+        # Frequency sweep
         f_t = self.startFrequency + self.chirpSlope * k
 
+        # Signal with phase shift
         s_t = np.sin(
             2 * np.pi * (self.startFrequency * k + 0.5 * self.chirpSlope * k**2)
-            + self.phaseShift
+            # + self.phaseShift
         )
 
-        # Create the figure and axes
+        # Plotting
         fig, axs = plt.subplots(2, 1, figsize=(10, 8), constrained_layout=True)
 
-        # Plot frequency vs time for numChirps chirps
         axs[0].plot(t, f_t, label='Frequency (f(t))', color='blue')
         axs[0].set_title(f'Frequency vs Time ({numChirps} Chirps)')
         axs[0].set_xlabel('Time (s)')
@@ -145,7 +133,6 @@ class FMCW(WaveForm):
         axs[0].grid(True)
         axs[0].legend()
 
-        # Plot signal s(t) for  chirps
         axs[1].plot(t, s_t, label='Signal s(t)', color='orange')
         axs[1].set_title(f'Signal s(t) ({numChirps} Chirps)')
         axs[1].set_xlabel('Time (s)')
@@ -153,8 +140,16 @@ class FMCW(WaveForm):
         axs[1].grid(True)
         axs[1].legend()
 
-        # Add a title for the entire figure
         fig.suptitle(f'WaveForm Visualization for {numChirps} Chirps', fontsize=16)
-
-        # Show the plot
         plt.show()
+
+
+if __name__ == "__main__":
+    demo_waveform = FMCW(
+        chirpDuration=0.004,
+        chirpSlope=2e12,
+        startFrequency=77e9,
+        bandwidth=8e9,
+        waveLength=C / 77e9
+    )
+    demo_waveform.show()

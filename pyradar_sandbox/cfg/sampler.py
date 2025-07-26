@@ -9,7 +9,6 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
-
 @dataclass
 class Sampler:
     """
@@ -17,17 +16,25 @@ class Sampler:
     """
 
     numChirpsperFrame: Optional[int] = field(default=None)  # Number of chirps per frame
-    numSamplesPerChirps: Optional[int] = field(
-        default=None
-    )  # Number of samples per chirp
-    adcSampleRate: Optional[float] = field(default=None)  # ADC sample rate
+    numSamplesPerChirps: Optional[int] = field(default=None)  # Number of samples per chirp
+    adcSampleRate: Optional[float] = field(default=None)  # ADC sample rate (samples per second)
+    framePeriod: float  # Time interval between frames (in seconds)
+    bitDepth: int = 16  # ADC resolution (bits)
 
     def __post_init__(self):
-        if self.numChirpsperFrame is None:
-            self.numChirpsperFrame = self.frameDuration / self.chirpDuration
-        if self.numSamplesPerChirps is None:
-            self.numSamplesPerChirps = self.adcSampleRate * self.chirpDuration
+        # Validate required parameters
+        if self.framePeriod <= 0:
+            raise ValueError("framePeriod must be a positive value.")
 
+        # Optionally infer adcSampleRate if numSamplesPerChirps and chirp duration are known
+        # NOTE: You may want to pass in a reference to the FMCW waveform to get chirpDuration
+        # This implementation assumes you know chirpDuration externally
+        # e.g., self.adcSampleRate = numSamplesPerChirps / chirpDuration
+
+        # Add consistency checks or warnings
+        if self.numChirpsperFrame is None:
+            print("Warning: numChirpsperFrame is not set.")
+        if self.numSamplesPerChirps is None:
+            print("Warning: numSamplesPerChirps is not set.")
         if self.adcSampleRate is None:
-            self.adcSampleRate = self.numSamplesPerChirps / self.chirpDuration
-            
+            print("Warning: adcSampleRate is not set.")

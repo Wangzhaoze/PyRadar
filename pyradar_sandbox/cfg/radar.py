@@ -32,7 +32,8 @@ class RadarConfig(DictConfig):
 
     @classmethod
     def load(
-        self, cfg_path: str = 'configs/radar_cfg/TI-MMWCAS-RF-EVM.yaml'
+        self, 
+        cfg_path: str = 'configs/radar_cfg/TI-MMWCAS-RF-EVM.yaml'
     ) -> 'RadarConfig':
         self.name = os.path.splitext(os.path.basename(cfg_path))[0]
         try:
@@ -54,27 +55,7 @@ class Radar:
 
     def __str__(self):
         return self.name
-
-
-class TI_MMWCAS_RF_EVM(Radar):
-    def __init__(self):
-        waveform = FMCW(
-            chirpDuration=4.99999987369e-06,
-            chirpSlope=7.90000010527e13,
-            startFrequency=76999999488.0,
-        )
-        sampler = Sampler(
-            numSamplesPerChirps=256,
-            numChirpsperFrame=16,
-            adcSampleRate=8000000,
-            chirpDuration=4.99999987369e-06,
-        )
-        transceivers = Transceivers(numTX=12, numRX=16)
-        super().__init__(waveform, sampler, transceivers)
-
-    def __str__(self):
-        return 'TI-MMWCAS-RF-EVM Radar Sensor'
-
+    
     def info(self):
         """
         Print the information of the WaveForm, Sampler, and AntennaArray instances as a combined table.
@@ -98,6 +79,28 @@ class TI_MMWCAS_RF_EVM(Radar):
         # Format as table
         table = [[key, value] for key, value in combined_info.items()]
         print(tabulate(table, headers=['Parameter', 'Value'], tablefmt='grid'))
+
+
+class TI_MMWCAS_RF_EVM(Radar):
+    def __init__(self):
+        waveform = FMCW(
+            chirpDuration=4.99999987369e-06,
+            chirpSlope=7.90000010527e13,
+            startFrequency=76999999488.0,
+        )
+        sampler = Sampler(
+            numSamplesPerChirps=256,
+            numChirpsperFrame=16,
+            adcSampleRate=8000000,
+            chirpDuration=4.99999987369e-06,
+        )
+        transceivers = Transceivers(numTX=12, numRX=16)
+        super().__init__(waveform, sampler, transceivers)
+
+    def __str__(self):
+        return 'TI-MMWCAS-RF-EVM Radar Sensor'
+
+    
 
 
 # class TI_AWR1843BOOST(Radar):
