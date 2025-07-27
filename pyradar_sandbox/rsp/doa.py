@@ -241,3 +241,68 @@ def doa_capon(
 # ######################################################################
 # MUSIC
 # ######################################################################
+
+def music(signal: np.array, txl: np.array, rxl: np.array,
+          az_bins: np.array, el_bins: np.array) -> np.array:
+    """MUSIC Direction of Arrival estimation algorithm.
+
+    Arguments:
+        signal: Signal received by all the antenna element
+                Is expected to be the combined received signal on each antenna
+                element.
+        txl: TX Antenna layout
+        rxl: RX Antenna layout
+        az_bins: Azimuth bins
+        el_bins: Elevation bins
+
+    NOTE: Under test
+    """
+    # Number of targets expected
+    T: int = 10
+
+    # Number of antenna
+    S: int = 12
+
+    N = len(signal)
+    signal = np.asmatrix(signal)
+    # Covariance of the received signal
+    R = (1.0 / N) * signal.H * signal
+
+    eigval, eigvect = np.linalg.eig(R)
+    idx = eigval.argsort()[::-1]
+    eigval = eigval[idx]
+    eigvect = eigvect[:, idx]
+
+    V = eigvect[:, :T]
+    Noise = eigvect[:, T:]
+
+    A = compute_steering_vector(txl, rxl, az_bins, el_bins)
+    A = np.asmatrix(A)
+    return (1.0 / np.abs(A.H * (Noise * Noise.H) * A))
+
+
+def esprit(signal: np.array, order: int, nb_sources: int) -> np.array:
+    """ESPRIT Frequency estiamtion algorithm.
+
+    Arguments:
+        signal: Samples of the signal
+        order: Order of the signal
+        nb_sources: Number of sources (or targets)
+    Return:
+        Normalized angular frequencies
+    """
+    N = len(signal)
+    signal = np.asmatrix(signal)
+    # Covariance of the received signal
+    R = (1.0 / N) * signal.H * signal
+
+    eigval, eigvect = np.linalg.eig(R)
+    idx = eigval.argsort()[::-1]
+    eigvect = eigvect[:, idx]
+
+    s = eigvect[:, 0:nb_sources]
+    s1 = s[0:order-1, :]
+    s2 = s[1:order:, :]
+    p = np.linalg.pinv(s1) @ s2
+    eigs, _ = np.linalg.eig(p)
+    return eigs
