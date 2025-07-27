@@ -7,6 +7,7 @@
 # @IDE     : vscode
 
 """Radar Signal Processing Module."""
+from matplotlib.image import BLACKMAN
 from scipy.ndimage import convolve
 import numpy as np
 from scipy.fft import fft, fftshift
@@ -17,6 +18,34 @@ from ..utils import *
 # FFT Functions
 # ######################################################################
 
+def windowing(input, window_type, axis=0):
+    """Window the input based on given window type.
+
+    Args:
+        input: input numpy array to be windowed.
+
+        window_type: enum chosen between Bartlett, Blackman, Hamming, Hanning and Kaiser.
+
+        axis: the axis along which the windowing will be applied.
+    
+    Returns:
+
+    """
+    window_length = input.shape[axis]
+    if window_type == 'BARTLETT':
+        window = np.bartlett(window_length)
+    elif window_type == 'BLACKMAN':
+        window = np.blackman(window_length)
+    elif window_type == 'HAMMING':
+        window = np.hamming(window_length)
+    elif window_type == 'HANNING':
+        window = np.hanning(window_length)
+    else:
+        raise ValueError("The specified window is not supported!!!")
+
+    output = input * window
+
+    return output
 
 def range_fft(
     adc_cube: np.ndarray, IdxSamples: int = 1, num_workers: Optional[int] = None
