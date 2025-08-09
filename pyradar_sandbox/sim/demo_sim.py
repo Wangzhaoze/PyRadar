@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-from pyradar_sandbox.cfg.TI_1843 import ColoradarTI1843BoostConfig
+
 from scipy.fft import fft, fftshift
 from typing import Optional
 
@@ -117,7 +117,7 @@ def radar_simulation(
         scene_pcd, 
         scene_pcd_rcs,
         RX_pose, 
-        radar_config: ColoradarTI1843BoostConfig
+        radar_config
         ):
     
     range_image, visibility_mask, rcs_spectrum = compute_range_image_with_visibility(
