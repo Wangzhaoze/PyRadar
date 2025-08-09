@@ -18,13 +18,10 @@ class Sampler:
     numChirpsperFrame: Optional[int] = field(default=None)  # Number of chirps per frame
     numSamplesPerChirps: Optional[int] = field(default=None)  # Number of samples per chirp
     adcSampleRate: Optional[float] = field(default=None)  # ADC sample rate (samples per second)
-    framePeriod: float  # Time interval between frames (in seconds)
     bitDepth: int = 16  # ADC resolution (bits)
 
     def __post_init__(self):
-        # Validate required parameters
-        if self.framePeriod <= 0:
-            raise ValueError("framePeriod must be a positive value.")
+
 
         # Optionally infer adcSampleRate if numSamplesPerChirps and chirp duration are known
         # NOTE: You may want to pass in a reference to the FMCW waveform to get chirpDuration

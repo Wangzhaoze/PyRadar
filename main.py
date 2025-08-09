@@ -1,7 +1,6 @@
 import os
 
 import hydra
-import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 import yaml
