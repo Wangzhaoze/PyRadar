@@ -15,7 +15,7 @@ class Sampler:
     Parameters related to ADC sampling, including sample rate and sample details.
     """
 
-    numChirpsperFrame: Optional[int] = field(default=None)  # Number of chirps per frame
+    numChirpsPerFrame: Optional[int] = field(default=None)  # Number of chirps per frame
     numSamplesPerChirps: Optional[int] = field(default=None)  # Number of samples per chirp
     adcSampleRate: Optional[float] = field(default=None)  # ADC sample rate (samples per second)
     bitDepth: int = 16  # ADC resolution (bits)
@@ -29,7 +29,7 @@ class Sampler:
         # e.g., self.adcSampleRate = numSamplesPerChirps / chirpDuration
 
         # Add consistency checks or warnings
-        if self.numChirpsperFrame is None:
+        if self.numChirpsPerFrame is None:
             print("Warning: numChirpsperFrame is not set.")
         if self.numSamplesPerChirps is None:
             print("Warning: numSamplesPerChirps is not set.")

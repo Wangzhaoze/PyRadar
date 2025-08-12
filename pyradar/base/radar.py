@@ -15,7 +15,7 @@ from typing import Any
 from tabulate import tabulate
 import numpy as np
 import os
-from .waveform import WaveForm, FMCW
+from .waveform import FMCW
 from .sampler import Sampler
 from .transceivers import Transceivers
 from omegaconf import DictConfig
@@ -25,7 +25,7 @@ from hydra_zen import instantiate
 class Radar:
     """Radar system configuration, including antenna and receiver details."""
 
-    def __init__(self, waveform: WaveForm, sampler: Sampler, transceivers: Transceivers):
+    def __init__(self, waveform: FMCW, sampler: Sampler, transceivers: Transceivers):
         self.waveform = waveform
         self.sampler = sampler
         self.transceivers = transceivers
