@@ -35,7 +35,7 @@ Raw ADC data from ColoRadr is given as example. More follows
   </thead>
   <tbody>
     <tr>
-      <td>Window FFT (Rec., Hann, Hamming)</td>
+      <td><del>Window FFT (Rec., Hann, Hamming)</td>
       <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
       <td></td>
     </tr>
