@@ -7,96 +7,148 @@
 # @IDE     : vscode
 
 """Radar Signal Processing Module."""
-from scipy.ndimage import convolve
 import numpy as np
 from typing import Literal
 from scipy.fft import fft, fftshift
 from typing import Optional, Union
-from ..utils import *
 
 # ######################################################################
 # FFT Functions
 # ######################################################################
 
 
+def windowing(len: int, window_type: Literal['Hamming', 'Blackman', 'Hann']) -> np.ndarray:
+    """
+    Generate a window function based on the specified type.
+
+    Args:
+        len (int): Length of the window.
+        window_type (Literal['Hamming', 'Blackman', 'Hann']): Type of the window function.
+            - 'Hamming': Hamming window.
+            - 'Blackman': Blackman window.
+            - 'Hann': Hann window.
+
+    Returns:
+        np.ndarray: The generated window function as a 1D numpy array.
+
+    Raises:
+        ValueError: If an unsupported window type is provided.
+    """
+    if window_type == 'Hamming':
+        window = np.hamming(len)
+    elif window_type == 'Blackman':
+        window = np.blackman(len)
+    elif window_type == 'Hann':
+        window = np.hanning(len)
+    else:
+        raise ValueError(f"Unsupported window type: {window_type}")
+
+    return window
+
+
 def range_fft(
-    adc_cube: np.ndarray, 
+    signal: np.ndarray, 
+    numRangeBins: Optional[int] = None,
     IdxSamples: int = 1, 
     num_workers: Optional[int] = None,
-    windowing: Optional[Literal['Hamming', 'Blackman', 'Hann']] = None
+    window_type: Optional[Literal['Hamming', 'Blackman', 'Hann']] = None
 ) -> np.ndarray:
     """
     Perform FFT along the range dimension of the ADC cube, with optional windowing.
+
+    Args:
+        signal (np.ndarray): Input ADC data cube.
+        numRangeBins (Optional[int]): Number of range bins for zero-padding. Defaults to None.
+        IdxSamples (int): Index of the range dimension in the input array. Defaults to 1.
+        num_workers (Optional[int]): Number of workers for parallel FFT computation. Defaults to None.
+        window_type (Optional[Literal['Hamming', 'Blackman', 'Hann']]): Type of window function to apply. Defaults to None.
+
+    Returns:
+        np.ndarray: The range FFT spectrum as a numpy array.
+
+    Raises:
+        ValueError: If the input signal is not a numpy array.
     """
-    if not isinstance(adc_cube, np.ndarray):
+    if not isinstance(signal, np.ndarray):
         raise ValueError('Input must be a numpy array.')
-    if adc_cube.ndim != 3:
-        raise ValueError('Input array must have exactly three dimensions.')
 
     # Apply window if specified
-    if windowing is not None:
-        num_samples = adc_cube.shape[IdxSamples]
-        if windowing == 'Hamming':
-            window = np.hamming(num_samples)
-        elif windowing == 'Blackman':
-            window = np.blackman(num_samples)
-        elif windowing == 'Hann':
-            window = np.hanning(num_samples)
-        else:
-            raise ValueError(f"Unsupported window type: {windowing}")
-        shape = [1, 1, 1]
-        shape[IdxSamples] = num_samples
+    if window_type is not None:
+        numADCSamples = signal.shape[IdxSamples]
+        window = windowing(numADCSamples, window_type)
+        shape = [1] * signal.ndim
+        shape[IdxSamples] = numADCSamples
         window = window.reshape(shape)
-        adc_cube = adc_cube * window
+        signal = signal * window
 
-    range_spectrum = fft(adc_cube, axis=IdxSamples, workers=num_workers)
+    range_spectrum = fft(signal, n=numRangeBins, axis=IdxSamples, workers=num_workers)
     return range_spectrum
 
 
 def doppler_fft(
-    adc_cube: np.ndarray, 
+    signal: np.ndarray, 
+    numDopplerBins: Optional[int] = None,
     IdxChirps: int = 2, 
     num_workers: Optional[int] = None,
-    windowing: Optional[Literal['Hamming', 'Blackman', 'Hann']] = None
+    window_type: Optional[Literal['Hamming', 'Blackman', 'Hann']] = None
 ) -> np.ndarray:
     """
     Perform FFT along the Doppler (chirps) dimension of the ADC cube, with optional windowing.
+
+    Args:
+        signal (np.ndarray): Input ADC data cube.
+        numDopplerBins (Optional[int]): Number of Doppler bins for zero-padding. Defaults to None.
+        IdxChirps (int): Index of the Doppler dimension in the input array. Defaults to 2.
+        num_workers (Optional[int]): Number of workers for parallel FFT computation. Defaults to None.
+        window_type (Optional[Literal['Hamming', 'Blackman', 'Hann']]): Type of window function to apply. Defaults to None.
+
+    Returns:
+        np.ndarray: The Doppler FFT spectrum as a numpy array.
+
+    Raises:
+        ValueError: If the input signal is not a numpy array.
     """
-    if not isinstance(adc_cube, np.ndarray):
+    if not isinstance(signal, np.ndarray):
         raise ValueError('Input must be a numpy array.')
-    if adc_cube.ndim != 3:
-        raise ValueError('Input array must have exactly three dimensions.')
+
 
     # Apply window if specified
-    if windowing is not None:
-        num_chirps = adc_cube.shape[IdxChirps]
-        if windowing == 'Hamming':
-            window = np.hamming(num_chirps)
-        elif windowing == 'Blackman':
-            window = np.blackman(num_chirps)
-        elif windowing == 'Hann':
-            window = np.hanning(num_chirps)
-        else:
-            raise ValueError(f"Unsupported window type: {windowing}")
-        shape = [1, 1, 1]
+    if window_type is not None:
+        num_chirps = signal.shape[IdxChirps]
+        window = windowing(num_chirps, window_type)
+        shape = [1] * signal.ndim
         shape[IdxChirps] = num_chirps
         window = window.reshape(shape)
-        adc_cube = adc_cube * window
+        signal = signal * window
 
     doppler_spectrum = fftshift(
-        fft(adc_cube, axis=IdxChirps, workers=num_workers), axes=IdxChirps
+        fft(signal, n=numDopplerBins, axis=IdxChirps, workers=num_workers), axes=IdxChirps
     )
     return doppler_spectrum
 
 
 def angle_fft(
     adc_cube: np.ndarray, 
+    numAngleBins: Optional[int] = None,
     IdxVirtualAntennas: int = 0, 
     num_workers: Optional[int] = None,
-    windowing: Optional[Literal['Hamming', 'Blackman', 'Hann']] = None
+    window_type: Optional[Literal['Hamming', 'Blackman', 'Hann']] = None
 ) -> np.ndarray:
     """
     Perform FFT along the virtual antennas (azimuth) dimension of the ADC cube, with optional windowing.
+
+    Args:
+        adc_cube (np.ndarray): Input ADC data cube.
+        numAngleBins (Optional[int]): Number of angle bins for zero-padding. Defaults to None.
+        IdxVirtualAntennas (int): Index of the virtual antennas dimension in the input array. Defaults to 0.
+        num_workers (Optional[int]): Number of workers for parallel FFT computation. Defaults to None.
+        window_type (Optional[Literal['Hamming', 'Blackman', 'Hann']]): Type of window function to apply. Defaults to None.
+
+    Returns:
+        np.ndarray: The angle FFT spectrum as a numpy array.
+
+    Raises:
+        ValueError: If the input adc_cube is not a numpy array or does not have three dimensions.
     """
     if not isinstance(adc_cube, np.ndarray):
         raise ValueError('Input must be a numpy array.')
@@ -104,22 +156,15 @@ def angle_fft(
         raise ValueError('Input array must have exactly three dimensions.')
 
     # Apply window if specified
-    if windowing is not None:
-        num_ant = adc_cube.shape[IdxVirtualAntennas]
-        if windowing == 'Hamming':
-            window = np.hamming(num_ant)
-        elif windowing == 'Blackman':
-            window = np.blackman(num_ant)
-        elif windowing == 'Hann':
-            window = np.hanning(num_ant)
-        else:
-            raise ValueError(f"Unsupported window type: {windowing}")
+    if window_type is not None:
+        num_antenna = adc_cube.shape[IdxVirtualAntennas]
+        window = windowing(num_antenna, window_type)
         shape = [1, 1, 1]
-        shape[IdxVirtualAntennas] = num_ant
+        shape[IdxVirtualAntennas] = num_antenna
         window = window.reshape(shape)
         adc_cube = adc_cube * window
 
-    azimuth_spectrum = fft(adc_cube, axis=IdxVirtualAntennas, workers=num_workers)
+    azimuth_spectrum = fft(adc_cube, n=numAngleBins, axis=IdxVirtualAntennas, workers=num_workers)
     azimuth_spectrum = fftshift(azimuth_spectrum, axes=IdxVirtualAntennas)
     return azimuth_spectrum
 
@@ -129,144 +174,42 @@ def range_doppler_fft(
     IdxSamples: int = 1,
     IdxChirps: int = 2,
     num_workers: Optional[int] = None,
-    range_windowing: Optional[Literal['Hamming', 'Blackman', 'Hann']] = None,
-    doppler_windowing: Optional[Literal['Hamming', 'Blackman', 'Hann']] = None,
+    range_window_type: Optional[Literal['Hamming', 'Blackman', 'Hann']] = None,
+    doppler_window_type: Optional[Literal['Hamming', 'Blackman', 'Hann']] = None,
 ) -> np.ndarray:
     """
     Perform Range FFT (with optional windowing) followed by Doppler FFT (with optional windowing) to generate a Range-Doppler map.
+
+    Args:
+        adc_cube (np.ndarray): Input ADC data cube with three dimensions (virtual antennas, range, chirps).
+        IdxSamples (int): Index of the range dimension in the input array. Defaults to 1.
+        IdxChirps (int): Index of the Doppler dimension in the input array. Defaults to 2.
+        num_workers (Optional[int]): Number of workers for parallel FFT computation. Defaults to None.
+        range_window_type (Optional[Literal['Hamming', 'Blackman', 'Hann']]): Type of window function for the range dimension. Defaults to None.
+        doppler_window_type (Optional[Literal['Hamming', 'Blackman', 'Hann']]): Type of window function for the Doppler dimension. Defaults to None.
+
+    Returns:
+        np.ndarray: The Range-Doppler map as a numpy array.
+
+    Raises:
+        ValueError: If the input ADC cube is not a numpy array or does not have three dimensions.
     """
     if not isinstance(adc_cube, np.ndarray):
         raise ValueError('Input must be a numpy array.')
     if adc_cube.ndim != 3:
         raise ValueError('Input array must have exactly three dimensions.')
 
-    # Range window
-    if range_windowing is not None:
-        num_samples = adc_cube.shape[IdxSamples]
-        if range_windowing == 'Hamming':
-            window = np.hamming(num_samples)
-        elif range_windowing == 'Blackman':
-            window = np.blackman(num_samples)
-        elif range_windowing == 'Hann':
-            window = np.hanning(num_samples)
-        else:
-            raise ValueError(f"Unsupported window type: {range_windowing}")
-        shape = [1, 1, 1]
-        shape[IdxSamples] = num_samples
-        window = window.reshape(shape)
-        adc_cube = adc_cube * window
-
-    range_spectrum = fft(adc_cube, axis=IdxSamples, workers=num_workers)
-
-    # Doppler window
-    if doppler_windowing is not None:
-        num_chirps = range_spectrum.shape[IdxChirps]
-        if doppler_windowing == 'Hamming':
-            window = np.hamming(num_chirps)
-        elif doppler_windowing == 'Blackman':
-            window = np.blackman(num_chirps)
-        elif doppler_windowing == 'Hann':
-            window = np.hanning(num_chirps)
-        else:
-            raise ValueError(f"Unsupported window type: {doppler_windowing}")
-        shape = [1, 1, 1]
-        shape[IdxChirps] = num_chirps
-        window = window.reshape(shape)
-        range_spectrum = range_spectrum * window
-
-    range_doppler_spectrum = fftshift(
-        fft(range_spectrum, axis=IdxChirps, workers=num_workers), axes=IdxChirps
+    range_fft_spectrum = range_fft(
+        adc_cube, 
+        IdxSamples=IdxSamples, 
+        num_workers=num_workers, 
+        window_type=range_window_type
     )
-    return range_doppler_spectrum
-
-
-def range_doppler_azimuth_fft(
-    adc_cube: np.ndarray,
-    IdxVirtualAntennas: int = 0,
-    IdxSamples: int = 1,
-    IdxChirps: int = 2,
-    numAngleBins: int = 180,
-    num_workers: Optional[int] = None,
-    range_windowing: Optional[Literal['Hamming', 'Blackman', 'Hann']] = None,
-    doppler_windowing: Optional[Literal['Hamming', 'Blackman', 'Hann']] = None,
-    azimuth_windowing: Optional[Literal['Hamming', 'Blackman', 'Hann']] = None,
-) -> np.ndarray:
-    """
-    Perform a series of FFTs (Range FFT, Doppler FFT, and Azimuth FFT) to transform ADC data
-    into a Range-Doppler-Azimuth representation, with optional windowing for each dimension.
-    """
-    if not isinstance(adc_cube, np.ndarray):
-        raise ValueError('Input must be a numpy array.')
-    if adc_cube.ndim != 3:
-        raise ValueError('Input array must have exactly three dimensions.')
-
-    # Calculate padding for the virtual antennas (azimuth) dimension
-    azimuth_padding = [(0, 0), (0, 0), (0, 0)]
-    azimuth_padding[IdxVirtualAntennas] = (
-        0,
-        numAngleBins - adc_cube.shape[IdxVirtualAntennas],
+    doppler_fft_spectrum = doppler_fft(
+        range_fft_spectrum, 
+        IdxChirps=IdxChirps, 
+        num_workers=num_workers,
+        window_type=doppler_window_type
     )
-    azimuth_padding = tuple(azimuth_padding)
+    return doppler_fft_spectrum
 
-    padded_adc_cube = np.pad(adc_cube, pad_width=azimuth_padding, mode='constant')
-
-    # Range window
-    if range_windowing is not None:
-        num_samples = padded_adc_cube.shape[IdxSamples]
-        if range_windowing == 'Hamming':
-            window = np.hamming(num_samples)
-        elif range_windowing == 'Blackman':
-            window = np.blackman(num_samples)
-        elif range_windowing == 'Hann':
-            window = np.hanning(num_samples)
-        else:
-            raise ValueError(f"Unsupported window type: {range_windowing}")
-        shape = [1, 1, 1]
-        shape[IdxSamples] = num_samples
-        window = window.reshape(shape)
-        padded_adc_cube = padded_adc_cube * window
-
-    range_spectrum = fft(padded_adc_cube, axis=IdxSamples, workers=num_workers)
-
-    # Doppler window
-    if doppler_windowing is not None:
-        num_chirps = range_spectrum.shape[IdxChirps]
-        if doppler_windowing == 'Hamming':
-            window = np.hamming(num_chirps)
-        elif doppler_windowing == 'Blackman':
-            window = np.blackman(num_chirps)
-        elif doppler_windowing == 'Hann':
-            window = np.hanning(num_chirps)
-        else:
-            raise ValueError(f"Unsupported window type: {doppler_windowing}")
-        shape = [1, 1, 1]
-        shape[IdxChirps] = num_chirps
-        window = window.reshape(shape)
-        range_spectrum = range_spectrum * window
-
-    range_doppler_spectrum = fftshift(
-        fft(range_spectrum, axis=IdxChirps, workers=num_workers), axes=IdxChirps
-    )
-
-    # Azimuth window
-    if azimuth_windowing is not None:
-        num_ant = range_doppler_spectrum.shape[IdxVirtualAntennas]
-        if azimuth_windowing == 'Hamming':
-            window = np.hamming(num_ant)
-        elif azimuth_windowing == 'Blackman':
-            window = np.blackman(num_ant)
-        elif azimuth_windowing == 'Hann':
-            window = np.hanning(num_ant)
-        else:
-            raise ValueError(f"Unsupported window type: {azimuth_windowing}")
-        shape = [1, 1, 1]
-        shape[IdxVirtualAntennas] = num_ant
-        window = window.reshape(shape)
-        range_doppler_spectrum = range_doppler_spectrum * window
-
-    range_doppler_azimuth_spectrum = fftshift(
-        fft(range_doppler_spectrum, axis=IdxVirtualAntennas, workers=num_workers),
-        axes=IdxVirtualAntennas,
-    )
-
-    return range_doppler_azimuth_spectrum
