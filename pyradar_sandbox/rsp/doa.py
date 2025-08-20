@@ -12,52 +12,55 @@ import numpy as np
 from scipy.fft import fft, fftshift
 from typing import Optional, Union
 from ..utils import *
-
+from pyradar.base.transceivers import Transceivers
 
 # ######################################################################
 # DoA Functions
 # ######################################################################
 
-
 def compute_steering_vector(
-    numVirtualAntennas: int, angles: Union[float, np.ndarray, list]
+    transceivers: Transceivers,
+    longitude: Optional[Union[float, np.ndarray, list]] = None,
+    latitude: Optional[Union[float, np.ndarray, list]] = None,
+    azimuth: Optional[Union[float, np.ndarray, list]] = None,
+    elevation: Optional[Union[float, np.ndarray, list]] = None
 ) -> np.ndarray:
-    """
-    Compute the steering vector for a Uniform Linear Array (ULA).
 
-    The steering vector is a matrix where each column corresponds to a virtual antenna,
-    and each row represents the phase shift for a given angle of arrival (AoA).
-    It is typically used in beamforming and array signal processing.
+    if longitude is not None and latitude is not None:
+        longitude, latitude = np.meshgrid(longitude, latitude)
+        longitude = longitude.reshape(1, -1)
+        latitude = latitude.reshape(1, -1)
 
-    Parameters:
-    ----------
-    numVirtualAntennas : int
-        The number of virtual antennas in the array. This determines the number of columns
-        in the output matrix.
+        
+        unit_vector = np.array([
+            np.sin(longitude) * np.cos(latitude),
+            np.sin(longitude) * np.sin(latitude),
+            np.cos(longitude)
+        ])
+    
+        return np.exp(
+            -1j * np.pi * transceivers.virtualAntennaArray @ unit_vector
+        )
 
-    angles : Union[float, np.ndarray, list]
-        The angles of arrival (AoA) in degrees. Can be a single float value, a list,
-        or a numpy array. If a single value is provided, it will be converted to a 1D array.
+    elif azimuth is not None and elevation is not None:
 
-    Returns:
-    -------
-    np.ndarray
-        A 2D numpy array (shape: [numVirtualAntennas, numAngleBins]) where each element
-        represents the complex steering vector value for a given angle and antenna index.
-        - The rows correspond to angles.
-        - The columns correspond to virtual antenna indices.
+        azimuth, elevation = np.meshgrid(azimuth, elevation)
+        azimuth = azimuth.flatten()
+        elevation = elevation.flatten()
 
-    """
-    angles = np.deg2rad(angles).reshape(-1)
+        unit_vector = np.array([
+            np.sin(azimuth) * np.cos(elevation),
+            np.sin(elevation),
+            np.cos(azimuth) * np.cos(elevation)
+        ])
 
-    steering_vector = np.zeros(
-        (numVirtualAntennas, angles.shape[0]), dtype=np.complex64
-    )
+        return np.exp(
+            -1j * np.pi * transceivers.virtualAntennaArray @ unit_vector
+        )
 
-    for IdxAntenna in range(numVirtualAntennas):
-        steering_vector[IdxAntenna] = np.exp(-1j * np.pi * IdxAntenna * np.sin(angles))
+    else:
+        raise ValueError("At least one of longitude/latitude or azimuth/elevation must be provided.")
 
-    return steering_vector
 
 
 def compute_spatial_covariance(signal: np.ndarray, fb_avg: bool = False) -> np.ndarray:
@@ -73,9 +76,9 @@ def compute_spatial_covariance(signal: np.ndarray, fb_avg: bool = False) -> np.n
     Parameters:
     ----------
     signal : np.ndarray
-        A 2D numpy array with dimensions (numVirtualAntennas, numSamplesPerChirp),
+        A 2D numpy array with dimensions (numVirtualAntennas, numSamples),
         where:
-        - `numSamplesPerChirp` is the number of signal samples per chirp.
+        - `numSamples` is the total number of signal samples.
         - `numVirtualAntennas` is the number of virtual antennas.
 
     fb_avg : bool, optional (default: False)
@@ -103,10 +106,9 @@ def compute_spatial_covariance(signal: np.ndarray, fb_avg: bool = False) -> np.n
         )
 
     # Compute spatial covariance matrix
-    numVirtualAntennas, numSamplesPerChirp = signal.shape
-    # np.einsum('ij,ik->ijk', x, x)
-    Rxx = signal @ signal.T.conj()
-    Rxx = np.divide(Rxx, numSamplesPerChirp)
+    numVirtualAntennas, _ = signal.shape
+
+    Rxx = np.cov(signal)
 
     if fb_avg:
         # Perform forward-backward averaging
@@ -166,7 +168,7 @@ def doa_bartlett(
     weight = steering_vector / numVirtualAntennas
 
     # Compute spatial covariance matrix
-    Rxx = compute_spatial_covariance(signal, fb_avg=True)
+    Rxx = compute_spatial_covariance(signal, fb_avg=False)
 
     # Compute Bartlett Power Spectrum
     # Option 1: Power = np.sum((steering_vector.T.conj() @ Rxx_inv) * steering_vector, axis=0)
@@ -185,13 +187,13 @@ def doa_capon(
     Compute the Direction of Arrival (DoA) using the Bartlett method.
 
     Parameters:
-        signal (np.ndarray): The received signal matrix with dimensions (numVirtualAntennas, numChirpsPerFrame).
+        signal (np.ndarray): The received signal matrix with dimensions (numVirtualAntennas, numSamplesPerChirp).
         steering_vector (np.ndarray): The steering vector matrix with dimensions
                                        (numAngleBins, numVirtualAntennas).
 
     Returns:
         tuple[np.ndarray, np.ndarray]:
-            - power_spectrum (np.ndarray): The Bartlett power spectrum with shape (numAngleBins,numChirpsPerFrame),
+            - power_spectrum (np.ndarray): The Bartlett power spectrum with shape (numAngleBins,numSamplesPerChirp),
                                            representing the signal power for each angle bin.
             - weight (np.ndarray): The normalized steering weights used for beamforming,
                                    with shape (numVirtualAntennas, numAngleBins).
@@ -202,7 +204,7 @@ def doa_capon(
     # Validate signal dimensions
     if signal.ndim != 2:
         signal = signal.reshape((-1, 1))
-        # raise ValueError("The input 'signal' must be a 2D array with shape (numVirtualAntennas, numChirpsPerFrame).")
+        # raise ValueError("The input 'signal' must be a 2D array with shape (numVirtualAntennas, numSamplesPerChirp).")
 
     # Validate steering vector dimensions
     if steering_vector.ndim != 2:
@@ -210,27 +212,18 @@ def doa_capon(
             "The input 'steering_vector' must be a 2D array with shape (numAngleBins, numVirtualAntennas)."
         )
 
-    numVirtualAntennas, numAngleBins = steering_vector.shape
-    if signal.shape[0] != numVirtualAntennas:
-        raise ValueError(
-            "The number of antennas in 'signal' and 'steering_vector' must match."
-        )
-
     # Compute spatial covariance matrix
     Rxx = compute_spatial_covariance(signal, fb_avg=True)
 
     try:
-        Rxx_inv = np.linalg.inv(Rxx)
+        Rxx_inv = np.linalg.pinv(Rxx)
     except np.linalg.LinAlgError:
         # Raise an error if the covariance matrix is singular or not invertible
         raise ValueError('Covariance matrix is singular or not invertible.')
 
-    # Compute Capon Power Spectrum
-    power = np.reciprocal(
-        np.einsum('ij,ij->i', steering_vector.T.conj(), (Rxx_inv @ steering_vector).T)
-    )
-
-    weight = np.matmul((Rxx_inv @ steering_vector), power)
+    first = Rxx_inv @ steering_vector
+    power = np.reciprocal(np.einsum('ij,ij->i', steering_vector.T.conj(), first.T))
+    weight = np.matmul(first, power)
 
     # response = watt2db(np.abs(power_spectrum))
     power_spectrum = np.abs(power)
@@ -241,68 +234,108 @@ def doa_capon(
 # ######################################################################
 # MUSIC
 # ######################################################################
-
-def music(signal: np.array, txl: np.array, rxl: np.array,
-          az_bins: np.array, el_bins: np.array) -> np.array:
-    """MUSIC Direction of Arrival estimation algorithm.
-
-    Arguments:
-        signal: Signal received by all the antenna element
-                Is expected to be the combined received signal on each antenna
-                element.
-        txl: TX Antenna layout
-        rxl: RX Antenna layout
-        az_bins: Azimuth bins
-        el_bins: Elevation bins
-
-    NOTE: Under test
+def doa_music(
+    signal: np.ndarray, steering_vector: np.ndarray, num_targets: int = 1
+) -> tuple[np.ndarray, np.ndarray]:
     """
-    # Number of targets expected
-    T: int = 10
+    Compute the Direction of Arrival (DoA) using the MUSIC algorithm.
 
-    # Number of antenna
-    S: int = 12
+    Parameters:
+        signal (np.ndarray): The received signal matrix with dimensions (numVirtualAntennas, numSamplesPerChirp).
+        steering_vector (np.ndarray): The steering vector matrix with dimensions
+                                      (numAngleBins, numVirtualAntennas).
+        num_targets (int): Number of expected targets (default: 1).
 
-    N = len(signal)
-    signal = np.asmatrix(signal)
-    # Covariance of the received signal
-    R = (1.0 / N) * signal.H * signal
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - power_spectrum (np.ndarray): The MUSIC power spectrum with shape (numAngleBins,),
+                                           representing the signal power for each angle bin.
+            - noise_subspace (np.ndarray): The noise subspace eigenvectors.
 
-    eigval, eigvect = np.linalg.eig(R)
-    idx = eigval.argsort()[::-1]
+    Raises:
+        ValueError: If input dimensions are invalid or mismatched.
+    """
+    # Validate signal dimensions
+    if signal.ndim != 2:
+        signal = signal.reshape((-1, 1))
+
+    if steering_vector.ndim != 2:
+        raise ValueError(
+            "The input 'steering_vector' must be a 2D array with shape (numAngleBins, numVirtualAntennas)."
+        )
+
+    numVirtualAntennas = signal.shape[0]
+    numAngleBins = steering_vector.shape[0]
+    if steering_vector.shape[1] != numVirtualAntennas:
+        raise ValueError(
+            "The number of antennas in 'signal' and 'steering_vector' must match."
+        )
+
+    # Compute spatial covariance matrix
+    Rxx = compute_spatial_covariance(signal, fb_avg=True)
+
+    # Eigen decomposition
+    eigval, eigvec = np.linalg.eigh(Rxx)
+    idx = np.argsort(eigval)[::-1]
     eigval = eigval[idx]
-    eigvect = eigvect[:, idx]
+    eigvec = eigvec[:, idx]
 
-    V = eigvect[:, :T]
-    Noise = eigvect[:, T:]
+    # Signal and noise subspaces
+    signal_subspace = eigvec[:, :num_targets]
+    noise_subspace = eigvec[:, num_targets:]
 
-    A = compute_steering_vector(txl, rxl, az_bins, el_bins)
-    A = np.asmatrix(A)
-    return (1.0 / np.abs(A.H * (Noise * Noise.H) * A))
+    # MUSIC spectrum calculation
+    power_spectrum = np.zeros(numAngleBins, dtype=np.float64)
+    for i in range(numAngleBins):
+        sv = steering_vector[i, :].reshape(-1, 1)
+        denom = np.linalg.norm(noise_subspace.conj().T @ sv) ** 2
+        power_spectrum[i] = 1.0 / denom if denom > 0 else 0.0
 
+    return power_spectrum, noise_subspace
 
-def esprit(signal: np.array, order: int, nb_sources: int) -> np.array:
-    """ESPRIT Frequency estiamtion algorithm.
+# def doa_esprit(
+#     signal: np.ndarray, order: int, num_targets: int = 1
+# ) -> np.ndarray:
+#     """
+#     Estimate Direction of Arrival (DoA) using the ESPRIT algorithm.
 
-    Arguments:
-        signal: Samples of the signal
-        order: Order of the signal
-        nb_sources: Number of sources (or targets)
-    Return:
-        Normalized angular frequencies
-    """
-    N = len(signal)
-    signal = np.asmatrix(signal)
-    # Covariance of the received signal
-    R = (1.0 / N) * signal.H * signal
+#     Parameters:
+#         signal (np.ndarray): The received signal matrix with dimensions (numVirtualAntennas, numSamplesPerChirp).
+#         order (int): Subarray order (number of rows in each subarray, typically numVirtualAntennas).
+#         num_targets (int): Number of sources/targets to estimate.
 
-    eigval, eigvect = np.linalg.eig(R)
-    idx = eigval.argsort()[::-1]
-    eigvect = eigvect[:, idx]
+#     Returns:
+#         np.ndarray: Estimated normalized angular frequencies (DoA roots).
 
-    s = eigvect[:, 0:nb_sources]
-    s1 = s[0:order-1, :]
-    s2 = s[1:order:, :]
-    p = np.linalg.pinv(s1) @ s2
-    eigs, _ = np.linalg.eig(p)
-    return eigs
+#     Raises:
+#         ValueError: If input dimensions are invalid or mismatched.
+#     """
+#     # Validate signal dimensions
+#     if signal.ndim != 2:
+#         signal = signal.reshape((-1, 1))
+
+#     numVirtualAntennas, numSamples = signal.shape
+#     if order > numVirtualAntennas or order < 2:
+#         raise ValueError("Order must be between 2 and numVirtualAntennas.")
+
+#     # Compute spatial covariance matrix
+#     Rxx = compute_spatial_covariance(signal, fb_avg=True)
+
+#     # Eigen decomposition
+#     eigval, eigvec = np.linalg.eigh(Rxx)
+#     idx = np.argsort(eigval)[::-1]
+#     eigvec = eigvec[:, idx]
+
+#     # Signal subspace
+#     signal_subspace = eigvec[:, :num_targets]
+
+#     # Form subarrays
+#     s1 = signal_subspace[0:order-1, :]
+#     s2 = signal_subspace[1:order, :]
+
+#     # Solve for rotational invariance
+#     # s1 * Psi ≈ s2
+#     Psi, residuals, rank, s = np.linalg.lstsq(s1, s2, rcond=None)
+#     roots, _ = np.linalg.eig(Psi)
+
+#     return roots
