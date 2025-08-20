@@ -12,14 +12,15 @@ waveform:
 
 sampler:
   _target_: pyradar.base.sampler.Sampler
-  numChirpsperFrame: 16
-  numSamplesPerChirps: 256
+  numChirpsPerFrame: 16
+  numSamplesPerChirp: 256
   adcSampleRate: 8000000
   bitDepth: 16
 
 transceivers:
   _target_: pyradar.base.transceivers.Transceivers
-  TX: [[15, -34, 0],
+  TX: [
+    [15, -34, 0],
       [19, -34, 0],
       [23, -34, 0],
       [24, -33, 0],
@@ -30,8 +31,10 @@ transceivers:
       [35, -34, 0],
       [39, -34, 0],
       [43, -34, 0],
-      [47, -34, 0]]
-  RX: [[0, 0, 0],
+      [47, -34, 0]
+      ]
+  RX: [
+    [0, 0, 0],
       [1, 0, 0],
       [2, 0, 0],
       [3, 0, 0],
@@ -46,4 +49,5 @@ transceivers:
       [50, 0, 0],
       [51, 0, 0],
       [52, 0, 0],
-      [53, 0, 0]]
+      [53, 0, 0]
+      ]
