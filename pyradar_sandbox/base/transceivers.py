@@ -50,6 +50,10 @@ class Transceivers:
 
     def mask(self, maskTX: np.ndarray, maskRX: np.ndarray) -> None:
         """Apply a mask to isolate specific antennas."""
+        if not (maskTX.shape[0] == self.numTX and maskRX.shape[0] == self.numRX):
+            raise ValueError("Mask shapes must match the number of TX and RX antennas.")
+        if not (maskTX.any() and maskRX.any()):
+            raise ValueError("At least one TX and one RX antenna must be selected.")
         try:
             self.maskTX = maskTX
             self.maskRX = maskRX
