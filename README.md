@@ -55,7 +55,7 @@ Raw ADC data from ColoRadr is given as example. More follows
       <td></td>
     </tr>
     <tr>
-      <td>Beamforming</td>
+      <td><del>Beamforming</td>
       <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
       <td></td>
     </tr>
@@ -69,13 +69,13 @@ Raw ADC data from ColoRadr is given as example. More follows
       <td><a href="./.github/workflow/">.github/workflow/</a></td>
       <td></td>
     </tr>
-    <tr>
-      <td>Complete radar and radar config</td>
+    <tr>s
+      <td><del>Complete radar and radar config</td>
       <td><a href="./sripts/radar">sripts/radar</a></td>
       <td></td>
     </tr>
     <tr>
-      <td>Radar Antenna visualization</td>
+      <td><del>Radar Antenna Array visualization</td>
       <td><a href="./sripts/utils/vis">sripts/utils/vis</a></td>
       <td></td>
     </tr>
