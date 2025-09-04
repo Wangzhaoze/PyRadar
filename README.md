@@ -40,17 +40,17 @@ Raw ADC data from ColoRadr is given as example. More follows
       <td></td>
     </tr>
     <tr>
-      <td>2D/3D CFAR variant</td>
+      <td><del>2D CFAR </td>
       <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
       <td></td>
     </tr>
     <tr>
-      <td>DBSCAN</td>
+      <td>Clustering</td>
       <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
       <td></td>
     </tr>
     <tr>
-      <td>MUSIC</td>
+      <td><del>MUSIC</td>
       <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
       <td></td>
     </tr>
@@ -63,26 +63,6 @@ Raw ADC data from ColoRadr is given as example. More follows
       <td>CPU/GPU acceleration</td>
       <td></td>
       <td></td>
-    </tr>
-    <tr>
-      <td>CI Test and pre-commit</td>
-      <td><a href="./.github/workflow/">.github/workflow/</a></td>
-      <td></td>
-    </tr>
-    <tr>s
-      <td><del>Complete radar and radar config</td>
-      <td><a href="./sripts/radar">sripts/radar</a></td>
-      <td></td>
-    </tr>
-    <tr>
-      <td><del>Radar Antenna Array visualization</td>
-      <td><a href="./sripts/utils/vis">sripts/utils/vis</a></td>
-      <td></td>
-    </tr>
-    <tr>
-      <td><del>Update author link</td>
-      <td><a href="./README.md">README</a></td>
-      <td><a href="https://github.com/changxu-zhang">@changxu-zhang</a></td>
     </tr>
     <!-- <tr>
       <td>-</td>
