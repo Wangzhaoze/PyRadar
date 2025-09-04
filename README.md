@@ -50,12 +50,27 @@ Raw ADC data from ColoRadr is given as example. More follows
       <td></td>
     </tr>
     <tr>
+      <td>Point Cloud</td>
+      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
+      <td></td>
+    </tr>
+    <tr>
       <td><del>MUSIC</td>
       <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
       <td></td>
     </tr>
     <tr>
       <td><del>Beamforming</td>
+      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><del>Path-Tracer</td>
+      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><del>Radar Simulation Model</td>
       <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
       <td></td>
     </tr>
