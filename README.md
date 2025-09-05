@@ -40,6 +40,11 @@ Raw ADC data from ColoRadr is given as example. More follows
       <td></td>
     </tr>
     <tr>
+      <td>Micro-Doppler STFT</td>
+      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
+      <td></td>
+    </tr>
+    <tr>
       <td><del>2D CFAR </td>
       <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
       <td></td>
@@ -65,12 +70,12 @@ Raw ADC data from ColoRadr is given as example. More follows
       <td></td>
     </tr>
     <tr>
-      <td><del>Path-Tracer</td>
+      <td>Path-Tracer</td>
       <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
       <td></td>
     </tr>
     <tr>
-      <td><del>Radar Simulation Model</td>
+      <td>Radar Simulation Model</td>
       <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
       <td></td>
     </tr>
