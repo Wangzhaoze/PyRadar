@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# @Time    : 2025-09-07
+# @Author  : Zhaoze Wang
+# @Site    : https://github.com/Wangzhaoze/pyradar
+# @File    : cfar.py
+# @IDE     : vscode
+
 import numpy as np
 from scipy.signal import convolve2d
 from numpy.lib.stride_tricks import sliding_window_view
