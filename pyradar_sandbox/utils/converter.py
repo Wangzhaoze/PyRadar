@@ -223,23 +223,3 @@ def azimuth_bins(
 
     # Generate azimuth bins from -azimuth_max to azimuth_max
     return np.linspace(-azimuth_max, azimuth_max, numAzimuthBins)
-
-
-# from radar_sensor_configs import *
-# def range_FFT_freq():
-# return np.arange(0,
-# numSamplesPerChirp)*(adcSampleRate)/numSamplesPerChirp
-
-# def freq2range():
-#     return f  * speedOfLight/(2*chirpSlope)
-
-# def doppler_FFT_freq():
-#     return
-
-# #doppler bins to frequencies
-# f = fftshift(fftfreq(255, chirpTime))
-
-# omega = 2 * np.pi * f
-
-# # doppler frequencies to velocity
-# omega * speedOfLight / (4 * np.pi * carrierFrequency)
