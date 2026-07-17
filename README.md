@@ -1,114 +1,84 @@
-<div align="center">
-    <h1>pyradar: A Toolbox for FMCW Radar Signal Processing and Simulation</h1>
-    <p> 
-        Authors:
-        <a href="https://wangzhaoze.github.io/" target="_blank">Zhaoze Wang</a><sup></sup>,
-        <a href="https://github.com/changxu-zhang" target="_blank">Changxu Zhang</a><sup></sup>
-    </p>
-    
-</div>
+# pyradar
 
+`pyradar` is a radar-model-centric Python library for turning sawtooth FMCW ADC
+samples into range-Doppler products, detections, velocity-bearing point clouds,
+clusters, and tracks. The radar model owns waveform, sampling, array geometry,
+MIMO timing, calibration, and processing defaults, so dataset-specific logic does
+not leak into signal-processing functions.
 
-## Setup Python Environment
-You can setup environment by:
-- Using pip:
-```bash
-source shell/setup_env_no_conda.sh
+```python
+from pyradar.base import Radar
+
+radar = Radar.from_config("radar.yaml")
+result = radar.build_pipeline().process(
+    adc,
+    dims=("loop", "emission", "rx", "sample"),
+)
+
+points = result.pointCloud.to_numpy()  # x, y, z, power, snr, radialVelocity
+tracks = result.tracks
 ```
-- Using conda
-```bash
-source shell/setup_env_conda.sh
+
+The lower-level parameter API remains available for experiments:
+
+```python
+from pyradar import rsp
+
+rangeSpectrum = rsp.range_fft(
+    adc,
+    fftSize=512,
+    sampleAxis=-1,
+    window="hann",
+)
+rangeDoppler = rsp.range_doppler_fft(adc, radar=radar, dims=dims)
 ```
 
+## Scope
 
-## Data
-Raw ADC data from ColoRadr is given as example. More follows
+- SIMO, arbitrary-order TDM, two-channel BPM, and phase-coded DDM
+- ULA, complete rectangular, sparse, and duplicate-phase-center arrays
+- Range, Doppler, and angle FFT; Bartlett, Capon, MUSIC, and ESPRIT DoA
+- CA-, GOCA-, SOCA-, and OS-CFAR with noise, threshold, SNR, and NMS outputs
+- FLU point clouds in SI units, deterministic velocity-aware DBSCAN, and
+  constant-velocity 2D/3D multi-target tracking
+- Readers for ColoRadar, ColoRadar+, RaDelft, and RAMPCNN/CRUW captures
 
-## TODO
+## Installation
 
-<table>
-  <thead>
-    <tr>
-      <th>Task</th>
-      <th>Files</th>
-      <th>Assigned To</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><del>Window FFT (Rec., Hann, Hamming)</td>
-      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>Micro-Doppler STFT</td>
-      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
-      <td></td>
-    </tr>
-    <tr>
-      <td><del>2D CFAR </td>
-      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>Clustering</td>
-      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>Point Cloud</td>
-      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
-      <td></td>
-    </tr>
-    <tr>
-      <td><del>MUSIC</td>
-      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
-      <td></td>
-    </tr>
-    <tr>
-      <td><del>Beamforming</td>
-      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>Path-Tracer</td>
-      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>Radar Simulation Model</td>
-      <td><a href="./pyradar/rsp/">pyradar/rsp</a></td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>CPU/GPU acceleration</td>
-      <td></td>
-      <td></td>
-    </tr>
-    <!-- <tr>
-      <td>-</td>
-      <td><a href="-">-</a></td>
-      <td><a href="-">-</a></td>
-    </tr> -->
-  </tbody>
-</table>
+Install a wheel downloaded from the GitHub Releases page:
 
-## License
-
-This work is released under the MIT license.
-
-## Citation
-In this code, we use the subset of **[ColoRadar](https://arpg.github.io/coloradar/)** and **[CRUW](https://www.cruwdataset.org/)** dataset to acknowledge their contributions.
-
-
-- Kramer, Andrew, Kyle Harlow, Christopher Williams, and Christoffer Heckman. “ColoRadar: The direct 3D millimeter wave radar dataset.” The International Journal of Robotics Research 41, no. 4 (2022): 351-360.
-- Wang, Yizhou, Zhongyu Jiang, Yudong Li, Jenq-Neng Hwang, Guanbin Xing, and Hui Liu. “RODNet: A Real-Time Radar Object Detection Network Cross-Supervised by Camera-Radar Fused Object 3D Localization.” IEEE Journal of Selected Topics in Signal Processing 15, no. 4 (2021): 954-967.
-
-
-## Build via pip
 ```bash
-pip install .
+python -m pip install pyradar-1.0.0rc1-py3-none-any.whl
+```
+
+For development:
+
+```bash
+python -m pip install -e ".[test,docs,examples]"
+python -m pytest
 python -m build
-pip install dist/pyradar-0.1.0-py3-none-any.whl
-python -c "import pyradar; print(pyradar.__file__)"
 ```
+
+The distribution is intentionally not uploaded to PyPI because the `pyradar`
+distribution name is already used by another project. The import name remains
+`pyradar`.
+
+## Documentation
+
+The documentation site contains the model contract, equations, algorithm
+assumptions, dataset adapters, executable examples, and generated API reference.
+Build it locally with:
+
+```bash
+python -m sphinx -W -b html docs docs/_build/html
+```
+
+All public calculations use SI units, radians, and a right-handed FLU coordinate
+frame: `x` forward, `y` left, `z` up.
+
+## Data and license
+
+The source code is released under the MIT license. Demo data retains its original
+dataset license; see `docs/examples/data/DATA.md` and `manifest.json`. RaDelft,
+ColoRadar+, and RAMPCNN/CRUW examples use local paths and do not redistribute
+those datasets.

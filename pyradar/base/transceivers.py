@@ -1,167 +1,92 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# @Time    : 2024-11-28
-# @Author  : Zhaoze Wang
-# @Site    : https://github.com/Wangzhaoze/pyradar
-# @File    : transceiver.py
-# @IDE     : vscode
+"""Physical transmit and receive array geometry."""
 
+from __future__ import annotations
+
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Literal, Union
-from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+
 import numpy as np
+from numpy.typing import ArrayLike, NDArray
 
-@dataclass
+
+def _positions(values: ArrayLike, name: str) -> NDArray[np.float64]:
+    array = np.asarray(values, dtype=np.float64)
+    if array.ndim != 2 or array.shape[0] == 0 or array.shape[1] not in (2, 3):
+        raise ValueError(f"{name} must have shape (N, 2) or (N, 3).")
+    if array.shape[1] == 2:
+        # Two-column input is interpreted as lateral (y) and vertical (z).
+        array = np.column_stack((np.zeros(array.shape[0]), array))
+    if not np.all(np.isfinite(array)):
+        raise ValueError(f"{name} must contain finite SI coordinates.")
+    array = np.array(array, copy=True)
+    array.setflags(write=False)
+    return array
+
+
+@dataclass(frozen=True, slots=True)
 class Transceivers:
+    """TX/RX coordinates in the radar FLU frame, in meters.
+
+    FLU is right handed: x points forward, y left, and z up. Antenna arrays
+    normally lie in the y-z plane. Virtual phase centers are formed from the
+    TX/RX channel map supplied by a MIMO strategy.
     """
-    Antenna array configuration, including antenna positions and array details.
-    """
-    def __init__(
-            self, 
-            TX: List[List[float]] = None,
-            RX: List[List[float]] = None
-    ):
-        self.TX = np.array(TX)
-        self.RX = np.array(RX)
 
-        self.dTX = self.TX - np.min(self.TX, axis=0)
-        self.dRX = self.RX - np.min(self.RX, axis=0)
+    txPositions: NDArray[np.float64]
+    rxPositions: NDArray[np.float64]
+    azimuthOnlyChannels: tuple[int, ...] = ()
 
-    @property
-    def numTX(self) -> int:
-        """Number of transmitters."""
-        return len(self.TX)
-    
-    @property
-    def numRX(self) -> int:
-        """Number of RX."""
-        return len(self.RX)
-    
-    @property
-    def numVirtualAntennas(self) -> int:
-        """Number of virtual antennas."""
-        return self.numTX * self.numRX
-    
-    @property
-    def antennaGain(self) -> float:
-        """Antenna gain in dB."""
-        return NotImplemented
-
-    def mask(self, maskTX: np.ndarray, maskRX: np.ndarray) -> None:
-        """Apply a mask to isolate specific antennas."""
-        if not (maskTX.shape[0] == self.numTX and maskRX.shape[0] == self.numRX):
-            raise ValueError("Mask shapes must match the number of TX and RX antennas.")
-        if not (maskTX.any() and maskRX.any()):
-            raise ValueError("At least one TX and one RX antenna must be selected.")
-        try:
-            self.maskTX = maskTX
-            self.maskRX = maskRX
-            self.__init__(self.TX[maskTX], self.RX[maskRX])
-        except Exception as e:
-            print(f"Error applying mask: {e}")
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self, "txPositions", _positions(self.txPositions, "txPositions")
+        )
+        object.__setattr__(
+            self, "rxPositions", _positions(self.rxPositions, "rxPositions")
+        )
+        indices = tuple(int(index) for index in self.azimuthOnlyChannels)
+        if any(index < 0 for index in indices):
+            raise ValueError("azimuthOnlyChannels cannot contain negative indices.")
+        object.__setattr__(self, "azimuthOnlyChannels", indices)
 
     @property
-    def virtualAntennaArray(self) -> np.ndarray:
-        """Virtual antenna array positions."""
-        TX_X = np.array(self.TX[:, 0] - np.min(self.TX[:, 0])).reshape(-1, 1)
-        TX_Y = np.array(self.TX[:, 1] - np.min(self.TX[:, 1])).reshape(-1, 1)
-        RX_X = np.array(self.RX[:, 0] - np.min(self.RX[:, 0])).reshape(1, -1)
-        RX_Y = np.array(self.RX[:, 1] - np.min(self.RX[:, 1])).reshape(1, -1)
+    def numTx(self) -> int:
+        return int(self.txPositions.shape[0])
 
-        virtualArray_X = (TX_X + RX_X).flatten()
-        virtualArray_Y = (TX_Y + RX_Y).flatten()
+    @property
+    def numRx(self) -> int:
+        return int(self.rxPositions.shape[0])
 
-        return np.column_stack((virtualArray_X, virtualArray_Y, np.zeros(self.numVirtualAntennas)))
+    def virtual_positions(
+        self, channelMap: Sequence[tuple[int, int]]
+    ) -> NDArray[np.float64]:
+        """Return monostatic virtual phase-center coordinates.
 
-    def show(self) -> None:
-        """Visualize the antenna positions."""
+        The phase of a far-field return is proportional to
+        ``(txPosition + rxPosition) dot direction``; therefore no arbitrary
+        array offset or dataset-specific topology is required.
+        """
 
-        plt.scatter(self.TX[:, 0], self.TX[:, 1], label='TX Antennas', color='blue', marker='^', s=80)
-        plt.scatter(self.RX[:, 0], self.RX[:, 1], label='RX Antennas', color='red', marker='o', s=80)
-        plt.scatter(self.virtualAntennaArray[:, 0], self.virtualAntennaArray[:, 1], label='Virtual Antenna Array', color='green', marker='x', s=80)
+        if not channelMap:
+            raise ValueError("channelMap cannot be empty.")
+        result = np.empty((len(channelMap), 3), dtype=np.float64)
+        for channel, (txId, rxId) in enumerate(channelMap):
+            if not 0 <= txId < self.numTx or not 0 <= rxId < self.numRx:
+                raise ValueError(f"Invalid channel map entry {(txId, rxId)}.")
+            result[channel] = self.txPositions[txId] + self.rxPositions[rxId]
+        result.setflags(write=False)
+        return result
 
-        plt.xlabel('Azimuth (half-wavelength)')
-        plt.ylabel('Elevation (half-wavelength)')
-        plt.title('Antenna Layout')
-        plt.legend()
-        plt.grid()
-        plt.show()
+    @staticmethod
+    def phase_center_groups(
+        positions: NDArray[np.float64], tolerance: float = 1e-9
+    ) -> tuple[tuple[int, ...], ...]:
+        """Group channels that share a virtual phase center."""
 
-    def show3D(self) -> None:
-        """Visualize the antenna positions in 3D."""
-        fig = plt.figure(figsize=(10, 8))
-        ax = fig.add_subplot(111, projection='3d')
-        
-        # Plot TX antennas
-        ax.scatter(self.TX[:, 0], self.TX[:, 1], self.TX[:, 2], 
-                  label='TX Antennas', color='blue', marker='^', s=120)
-        
-        # Plot RX antennas
-        ax.scatter(self.RX[:, 0], self.RX[:, 1], self.RX[:, 2], 
-                  label='RX Antennas', color='red', marker='o', s=100)
-        
-        # Plot virtual antenna array
-        ax.scatter(self.virtualAntennaArray[:, 0], self.virtualAntennaArray[:, 1], self.virtualAntennaArray[:, 2], 
-                  label='Virtual Antenna Array', color='green', marker='x', s=80)
-        
-        # Add coordinate frame at first RX antenna
-        origin = self.RX[0]  # First RX antenna position
-        axis_length = 2.0    # Length of coordinate axes
-        
-        # X-axis (red)
-        ax.quiver(origin[0], origin[1], origin[2], axis_length, 0, 0, 
-                 color='red', arrow_length_ratio=0.1, linewidth=3, label='X-axis')
-        
-        # Y-axis (green) 
-        ax.quiver(origin[0], origin[1], origin[2], 0, axis_length, 0, 
-                 color='lime', arrow_length_ratio=0.1, linewidth=3, label='Y-axis')
-        
-        # Z-axis (blue)
-        ax.quiver(origin[0], origin[1], origin[2], 0, 0, axis_length, 
-                 color='cyan', arrow_length_ratio=0.1, linewidth=3, label='Z-axis')
-        
-        # Set labels and title
-        ax.set_xlabel('X (half-wavelength)')
-        ax.set_ylabel('Y (half-wavelength)')
-        ax.set_zlabel('Z (half-wavelength)')
-        ax.set_title('3D Antenna Layout with Coordinate Frame')
-        
-        # Add legend and grid
-        ax.legend()
-        ax.grid(True)
-        
-        # Set equal aspect ratio for better visualization
-        max_range = np.array([self.virtualAntennaArray[:, 0].max() - self.virtualAntennaArray[:, 0].min(),
-                             self.virtualAntennaArray[:, 1].max() - self.virtualAntennaArray[:, 1].min(),
-                             self.virtualAntennaArray[:, 2].max() - self.virtualAntennaArray[:, 2].min()]).max() / 2.0
-        
-        mid_x = (self.virtualAntennaArray[:, 0].max() + self.virtualAntennaArray[:, 0].min()) * 0.5
-        mid_y = (self.virtualAntennaArray[:, 1].max() + self.virtualAntennaArray[:, 1].min()) * 0.5
-        mid_z = (self.virtualAntennaArray[:, 2].max() + self.virtualAntennaArray[:, 2].min()) * 0.5
-        
-        ax.set_xlim(mid_x - max_range, mid_x + max_range)
-        ax.set_ylim(mid_y - max_range, mid_y + max_range)
-        ax.set_zlim(mid_z - max_range, mid_z + max_range)
-        
-        plt.show()
-
-
-
-if __name__ == "__main__":
-    # Example usage
-    tx = [[0, 6, 0], [1, 8, 0], [0, 10, 0]]
-    rx = [[0, 0, 0], [0, 1, 0], [0, 2, 0], [0, 3, 0]]
-    transceivers = Transceivers(TX=tx, RX=rx)
-    
-    # Show 2D visualization
-    print("Displaying 2D antenna layout...")
-    transceivers.show()
-    
-    # Show 3D visualization
-    print("Displaying 3D antenna layout...")
-    transceivers.show3D()
-
-    transceivers.mask(np.array([True, False, True]), np.array([True, True, False, True]))
-    transceivers.show()
-    transceivers.show3D()
+        if tolerance <= 0.0:
+            raise ValueError("tolerance must be positive.")
+        keys = np.rint(np.asarray(positions) / tolerance).astype(np.int64)
+        groups: dict[tuple[int, int, int], list[int]] = {}
+        for index, key in enumerate(keys):
+            groupKey = (int(key[0]), int(key[1]), int(key[2]))
+            groups.setdefault(groupKey, []).append(index)
+        return tuple(tuple(group) for group in groups.values())
