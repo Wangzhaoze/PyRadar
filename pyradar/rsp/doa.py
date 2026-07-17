@@ -261,8 +261,14 @@ def combine_duplicate_channels(
 def _geometry(
     positions: NDArray[np.float64], tolerance: float
 ) -> tuple[str, float | None, float | None]:
-    y = np.unique(np.rint(positions[:, 1] / tolerance).astype(np.int64)) * tolerance
-    z = np.unique(np.rint(positions[:, 2] / tolerance).astype(np.int64)) * tolerance
+    y = np.asarray(
+        np.unique(np.rint(positions[:, 1] / tolerance).astype(np.int64)) * tolerance,
+        dtype=np.float64,
+    )
+    z = np.asarray(
+        np.unique(np.rint(positions[:, 2] / tolerance).astype(np.int64)) * tolerance,
+        dtype=np.float64,
+    )
 
     def uniform(values: NDArray[np.float64]) -> float | None:
         if values.size < 2:

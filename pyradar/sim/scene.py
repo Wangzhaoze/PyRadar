@@ -147,13 +147,17 @@ def render_range_image(
         & (elevation >= elMin)
         & (elevation < elMax)
     )
-    azimuthAxis = (
+    azimuthAxis = np.asarray(
         azMin
-        + (np.arange(int(np.ceil((azMax - azMin) / azResolution))) + 0.5) * azResolution
+        + (np.arange(int(np.ceil((azMax - azMin) / azResolution))) + 0.5)
+        * azResolution,
+        dtype=np.float64,
     )
-    elevationAxis = (
+    elevationAxis = np.asarray(
         elMin
-        + (np.arange(int(np.ceil((elMax - elMin) / elResolution))) + 0.5) * elResolution
+        + (np.arange(int(np.ceil((elMax - elMin) / elResolution))) + 0.5)
+        * elResolution,
+        dtype=np.float64,
     )
     shape = (elevationAxis.size, azimuthAxis.size)
     rangeImage = np.full(shape, np.inf, dtype=np.float64)
