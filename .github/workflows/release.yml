@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: python -m pip install build twine
+      - run: python -m build
+      - run: python -m twine check dist/*
+      - name: Package licensed example data
+        run: >-
+          python -m zipfile -c dist/pyradar-example-data.zip
+          docs/examples/data/DATA.md
+          docs/examples/data/manifest.json
+          docs/examples/data/LICENSE-ColoRadar.txt
+          docs/examples/data/ColoRadar
+      - name: Write SHA256 checksums
+        run: >-
+          python -c "import glob,hashlib,pathlib;
+          files=sorted(glob.glob('dist/*'));
+          pathlib.Path('dist/SHA256SUMS.txt').write_text(''.join(
+          f'{hashlib.sha256(open(p,\"rb\").read()).hexdigest()}  {pathlib.Path(p).name}\n'
+          for p in files), encoding='utf-8')"
+      - uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          generate_release_notes: true
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/pyradar-example-data.zip
+            dist/SHA256SUMS.txt

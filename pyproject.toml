@@ -1,48 +1,119 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel",
-    "cython>=0.29.0",
-    "numpy>=1.19.0",
-    "pybind11>=2.6.0; implementation_name=='cpython'",
-    "cmake>=3.12; implementation_name=='cpython'"
-]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyradar"
-version = "0.1.0"
-description = "A Python radar signal processing library with optional C++ acceleration"
-authors = [
-    { name = "Zhaoze Wang", email = "wangzhaoze@outlook.com" }
-]
-license = { file = "LICENSE" }
+version = "1.0.0rc1"
+description = "Radar-model-centric FMCW ADC signal processing, point clouds, clustering, and tracking"
 readme = "README.md"
-requires-python = ">=3.9"
-
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Zhaoze Wang", email = "wangzhaoze@outlook.com" },
+]
+keywords = ["radar", "FMCW", "MIMO", "signal processing", "point cloud"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+]
 dependencies = [
-    "matplotlib",
-    "numpy",
-    "open3d",
-    "pillow",
-    "pre-commit",
-    "pyparsing",
-    "pyyaml",
-    "scipy",
-    "tabulate",
-    "hydra-zen"
+    "numpy>=1.23",
+    "PyYAML>=6.0",
+    "scipy>=1.10",
+]
+
+[project.optional-dependencies]
+examples = ["matplotlib>=3.7"]
+simulation = ["trimesh>=4.0"]
+test = [
+    "build>=1.2",
+    "mypy>=1.10",
+    "pre-commit>=4.0",
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "twine>=5.0",
+    "types-PyYAML>=6.0.12",
+]
+docs = [
+    "matplotlib>=3.7",
+    "myst-parser>=3.0",
+    "numpydoc>=1.8",
+    "pydata-sphinx-theme>=0.16",
+    "sphinx>=7.4",
+    "sphinx-gallery>=0.18",
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/Wangzhaoze/pyradar"
-"Bug Tracker" = "https://github.com/Wangzhaoze/pyradar/issues"
+Documentation = "https://wangzhaoze.github.io/pyradar/"
+Repository = "https://github.com/Wangzhaoze/pyradar"
+Issues = "https://github.com/Wangzhaoze/pyradar/issues"
+Releases = "https://github.com/Wangzhaoze/pyradar/releases"
 
 [tool.setuptools]
-package-dir = {"" = "."} 
+include-package-data = false
 
 [tool.setuptools.packages.find]
 where = ["."]
+include = ["pyradar", "pyradar.*"]
+exclude = ["archieves*", "examples*", "tests*"]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = [
+    "archieves",
+    "build",
+    "dist",
+    "docs/_build",
+    "examples",
+]
+addopts = "-p no:cacheprovider --basetemp=.pytest-tmp"
+markers = [
+    "integration: tests requiring optional local datasets",
+]
 
-[tool.setuptools.package-data]
-"pyradar" = ["*.so"]
+[tool.coverage.run]
+branch = true
+source = ["pyradar/base", "pyradar/rsp"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+extend-exclude = [
+    "archieves",
+    "docs/examples/data",
+    "docs/examples/output",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"docs/examples/*.py" = ["T201"]
+
+[tool.mypy]
+python_version = "3.10"
+packages = ["pyradar"]
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+ignore_missing_imports = true
+exclude = "^archieves/"

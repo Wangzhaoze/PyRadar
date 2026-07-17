@@ -1,0 +1,32 @@
+name: custom_ula
+waveform:
+  startFrequency: 77000000000.0
+  slope: 40000000000000.0
+  adcStartTime: 0.000004
+  rampEndTime: 0.000036
+  idleTime: 0.000008
+sampler:
+  numSamples: 256
+  numLoops: 64
+  sampleRate: 10000000.0
+transceivers:
+  txPositions:
+    - [0.0, 0.0, 0.0]
+  rxPositions:
+    - [0.0, 0.000000, 0.0]
+    - [0.0, 0.001950, 0.0]
+    - [0.0, 0.003900, 0.0]
+    - [0.0, 0.005850, 0.0]
+mimo:
+  type: simo
+processing:
+  fft:
+    rangeFftSize: 512
+    dopplerFftSize: 64
+    rangeWindow: hann
+    dopplerWindow: hann
+  cfar:
+    method: os
+    pfa: 0.0001
+  doa:
+    method: auto

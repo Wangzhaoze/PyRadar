@@ -1,0 +1,9 @@
+include LICENSE
+include README.md
+prune archieves
+prune examples
+prune docs/examples/data
+prune docs/examples/output
+prune tests
+global-exclude *.py[cod]
+global-exclude __pycache__

@@ -1,0 +1,15 @@
+ColoRadar example-data notice
+=============================
+
+The files listed in manifest.json with source "ColoRadar" originate from the
+ColoRadar project by Andrew Kramer, Kyle Harlow, Christopher Williams, and
+Christoffer Heckman. The upstream project identifies ColoRadar under the Apache
+License, Version 2.0 (SPDX identifier: Apache-2.0).
+
+Project and license information:
+https://arpg.colorado.edu/coloradar/
+https://www.apache.org/licenses/LICENSE-2.0
+
+The pyradar MIT license applies to pyradar source code, not to this dataset
+material. Preserve this notice and the upstream attribution when redistributing
+the example-data asset.

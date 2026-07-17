@@ -1,9 +1,41 @@
-
-# ignore pychache
 __pycache__/
+*.py[cod]
+*.so
+*.pyd
 
-# ignore pyc files
-*.pyc
+.coverage
+.mypy_cache/
+.pre-commit-cache/
+.pytest-tmp/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
 
-# ignore 3d assets
-pyradar_sandbox/assets/*
+build/
+dist/
+*.egg-info/
+
+.venv*/
+venv/
+
+.vscode/
+archieves/
+
+docs/_build/
+docs/auto_examples/
+docs/examples/output/
+docs/sg_execution_times.rst
+
+# Local-only dataset material. One licensed ColoRadar frame is explicitly kept.
+docs/examples/data/CRUW/
+docs/examples/data/RAMPCNN/
+docs/examples/data/RaDelft/
+docs/examples/data/ColoRadarPlus/
+docs/examples/data/ColoRadar/**/frame_[1-9]*.bin
+docs/examples/data/ColoRadar/**/heatmaps/
+docs/examples/data/ColoRadar/**/groundtruth/
+docs/examples/data/ColoRadar/**/imu/
+docs/examples/data/ColoRadar/**/lidar/
+docs/examples/data/ColoRadar/**/single_chip/
+docs/examples/data/ColoRadar/calib/transforms/
+docs/examples/configs/TI-*.yaml

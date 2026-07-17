@@ -1,37 +1,45 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# @Time    : 2024-11-28
-# @Author  : Zhaoze Wang
-# @Site    : https://github.com/Wangzhaoze/pyradar
-# @File    : sampler.py
-# @IDE     : vscode
+"""ADC and frame sampling models."""
 
-from dataclasses import dataclass, field
-from typing import Optional
+from __future__ import annotations
 
-@dataclass
+from dataclasses import dataclass
+
+import numpy as np
+
+
+@dataclass(frozen=True, slots=True)
 class Sampler:
+    """ADC sampling and frame configuration.
+
+    Parameters are the samples captured per emission and the number of MIMO
+    loops in one frame. Complex IQ sampling is the default for mmWave radars.
     """
-    Parameters related to ADC sampling, including sample rate and sample details.
-    """
 
-    numChirpsPerFrame: Optional[int] = field(default=None)  # Number of chirps per frame
-    numSamplesPerChirp: Optional[int] = field(default=None)  # Number of samples per chirp
-    adcSampleRate: Optional[float] = field(default=None)  # ADC sample rate (samples per second)
-    bitDepth: int = 16  # ADC resolution (bits)
+    numSamples: int
+    numLoops: int
+    sampleRate: float
+    bitDepth: int = 16
+    complexSampling: bool = True
+    framePeriod: float | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
+        if self.numSamples < 1 or self.numLoops < 1:
+            raise ValueError("numSamples and numLoops must be positive integers.")
+        if not np.isfinite(self.sampleRate) or self.sampleRate <= 0.0:
+            raise ValueError("sampleRate must be finite and positive.")
+        if self.bitDepth < 1:
+            raise ValueError("bitDepth must be positive.")
+        if self.framePeriod is not None and self.framePeriod <= 0.0:
+            raise ValueError("framePeriod must be positive when provided.")
 
+    @property
+    def samplePeriod(self) -> float:
+        """ADC sampling period in seconds."""
 
-        # Optionally infer adcSampleRate if numSamplesPerChirps and chirp duration are known
-        # NOTE: You may want to pass in a reference to the FMCW waveform to get chirpDuration
-        # This implementation assumes you know chirpDuration externally
-        # e.g., self.adcSampleRate = numSamplesPerChirps / chirpDuration
+        return 1.0 / self.sampleRate
 
-        # Add consistency checks or warnings
-        if self.numChirpsPerFrame is None:
-            print("Warning: numChirpsperFrame is not set.")
-        if self.numSamplesPerChirp is None:
-            print("Warning: numSamplesPerChirps is not set.")
-        if self.adcSampleRate is None:
-            print("Warning: adcSampleRate is not set.")
+    @property
+    def captureDuration(self) -> float:
+        """Duration covered by the ADC samples of one emission."""
+
+        return self.numSamples / self.sampleRate

@@ -1,341 +1,443 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# @Time    : 2024-09-27
-# @Author  : Zhaoze Wang
-# @Site    : https://github.com/Wangzhaoze/pyradar
-# @File    : doa.py
-# @IDE     : vscode
+"""Geometry-aware direction-of-arrival estimation."""
 
-"""Radar Signal Processing Module."""
-from scipy.ndimage import convolve
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Literal
+
 import numpy as np
-from scipy.fft import fft, fftshift
-from typing import Optional, Union
-from ..utils import *
-from pyradar.base.transceivers import Transceivers
+from numpy.typing import ArrayLike, NDArray
+from scipy import ndimage
 
-# ######################################################################
-# DoA Functions
-# ######################################################################
+DoAMethod = Literal["auto", "fft", "bartlett", "capon", "music", "esprit"]
 
-def compute_steering_vector(
-    transceivers: Transceivers,
-    longitude: Optional[Union[float, np.ndarray, list]] = None,
-    latitude: Optional[Union[float, np.ndarray, list]] = None,
-    azimuth: Optional[Union[float, np.ndarray, list]] = None,
-    elevation: Optional[Union[float, np.ndarray, list]] = None
-) -> np.ndarray:
-
-    if longitude is not None and latitude is not None:
-        longitude, latitude = np.meshgrid(longitude, latitude)
-        longitude = longitude.reshape(1, -1)
-        latitude = latitude.reshape(1, -1)
-
-        
-        unit_vector = np.array([
-            np.sin(longitude) * np.cos(latitude),
-            np.sin(longitude) * np.sin(latitude),
-            np.cos(longitude)
-        ])
-    
-        return np.exp(
-            -1j * np.pi * transceivers.virtualAntennaArray @ unit_vector
-        )
-
-    elif azimuth is not None and elevation is not None:
-
-        azimuth, elevation = np.meshgrid(azimuth, elevation)
-        azimuth = azimuth.flatten()
-        elevation = elevation.flatten()
-
-        unit_vector = np.array([
-            np.sin(azimuth) * np.cos(elevation),
-            np.sin(elevation),
-            np.cos(azimuth) * np.cos(elevation)
-        ])
-
-        return np.exp(
-            -1j * np.pi * transceivers.virtualAntennaArray @ unit_vector
-        )
-
-    else:
-        raise ValueError("At least one of longitude/latitude or azimuth/elevation must be provided.")
+if TYPE_CHECKING:
+    from pyradar.base.radar import Radar
 
 
+@dataclass(frozen=True, slots=True)
+class DoAResult:
+    """Estimated directions and the search spectrum."""
 
-def compute_spatial_covariance(signal: np.ndarray, fb_avg: bool = False) -> np.ndarray:
+    azimuth: NDArray[np.float64]
+    elevation: NDArray[np.float64]
+    power: NDArray[np.float64]
+    spectrum: NDArray[np.float64]
+    azimuthAxis: NDArray[np.float64]
+    elevationAxis: NDArray[np.float64]
+    method: str
+
+
+def steering_vector(
+    arrayPositions: ArrayLike,
+    wavelength: float,
+    azimuth: ArrayLike,
+    elevation: ArrayLike | float = 0.0,
+) -> NDArray[np.complex128]:
+    """Return far-field steering vectors for FLU array coordinates.
+
+    ``azimuth`` and ``elevation`` are broadcast together. The returned shape is
+    ``broadcast_shape + (numChannels,)``.
     """
-    Compute the spatial covariance matrix of a signal.
 
-    This function calculates the spatial covariance matrix for an input signal,
-    which is typically used in array signal processing to analyze the spatial
-    characteristics of received signals. An optional forward-backward averaging
-    step can be performed to enhance the covariance matrix's properties,
-    especially in scenarios with uniform linear arrays (ULA).
-
-    Parameters:
-    ----------
-    signal : np.ndarray
-        A 2D numpy array with dimensions (numVirtualAntennas, numSamples),
-        where:
-        - `numSamples` is the total number of signal samples.
-        - `numVirtualAntennas` is the number of virtual antennas.
-
-    fb_avg : bool, optional (default: False)
-        If True, forward-backward averaging is applied to the covariance matrix.
-        This can improve performance for uniform linear arrays (ULA) in scenarios
-        with spatial symmetry.
-
-    Returns:
-    -------
-    np.ndarray
-        A 2D numpy array (numVirtualAntennas x numVirtualAntennas) representing
-        the spatial covariance matrix. If forward-backward averaging is enabled,
-        the returned matrix will incorporate the averaging.
-
-    Raises:
-    -------
-    ValueError
-        If the input `signal` is not a 2D array.
-
-    """
-    # Check dimensions
-    if signal.ndim != 2:
-        raise ValueError(
-            'Input signal must be a 2D array (numVirtualAntennas x numSamplesPerChirp).'
-        )
-
-    # Compute spatial covariance matrix
-    numVirtualAntennas, _ = signal.shape
-
-    Rxx = np.cov(signal)
-
-    if fb_avg:
-        # Perform forward-backward averaging
-        # Create exchange matrix
-        J = np.fliplr(
-            np.eye(numVirtualAntennas)
-        )  # Flip identity matrix to form exchange matrix
-        # Compute forward-backward averaged covariance matrix
-        Rxx = 0.5 * (Rxx + J @ np.conjugate(Rxx) @ J)
-
-    return Rxx
+    positions = np.asarray(arrayPositions, dtype=float)
+    if positions.ndim != 2 or positions.shape[1] != 3:
+        raise ValueError("arrayPositions must have shape (channels, 3).")
+    if wavelength <= 0.0:
+        raise ValueError("wavelength must be positive.")
+    azimuthArray, elevationArray = np.broadcast_arrays(
+        np.asarray(azimuth, dtype=float), np.asarray(elevation, dtype=float)
+    )
+    direction = np.stack(
+        (
+            np.cos(elevationArray) * np.cos(azimuthArray),
+            np.cos(elevationArray) * np.sin(azimuthArray),
+            np.sin(elevationArray),
+        ),
+        axis=-1,
+    )
+    phase = (2.0 * np.pi / wavelength) * np.einsum(
+        "...d,md->...m", direction, positions, optimize=True
+    )
+    return np.exp(1j * phase)
 
 
-# ######################################################################
-# Beamforming
-# ######################################################################
+def spatial_covariance(
+    signal: ArrayLike,
+    *,
+    channelAxis: int = -1,
+    forwardBackward: bool = False,
+) -> NDArray[np.complex128]:
+    """Estimate the spatial covariance matrix from one or more snapshots."""
+
+    array = np.asarray(signal)
+    if array.ndim == 0:
+        raise ValueError("signal must contain a channel dimension.")
+    snapshots = np.moveaxis(array, channelAxis, -1).reshape(
+        -1, array.shape[channelAxis]
+    )
+    covariance = snapshots.T @ snapshots.conj() / max(1, snapshots.shape[0])
+    if forwardBackward:
+        exchange = np.fliplr(np.eye(covariance.shape[0]))
+        covariance = 0.5 * (covariance + exchange @ covariance.conj() @ exchange)
+    return np.asarray(covariance, dtype=np.complex128)
+
+
+def _search_vectors(
+    arrayPositions: ArrayLike,
+    wavelength: float,
+    azimuthAxis: ArrayLike,
+    elevationAxis: ArrayLike | None,
+) -> tuple[NDArray[np.complex128], tuple[int, int]]:
+    azimuth = np.asarray(azimuthAxis, dtype=float)
+    elevation = np.asarray(
+        [0.0] if elevationAxis is None else elevationAxis, dtype=float
+    )
+    azGrid, elGrid = np.meshgrid(azimuth, elevation)
+    vectors = steering_vector(arrayPositions, wavelength, azGrid, elGrid)
+    return vectors.reshape(-1, vectors.shape[-1]), azGrid.shape
 
 
 def doa_bartlett(
-    signal: np.ndarray, steering_vector: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Compute the Direction of Arrival (DoA) using the Bartlett method.
+    signal: ArrayLike,
+    *,
+    arrayPositions: ArrayLike,
+    wavelength: float,
+    azimuthAxis: ArrayLike,
+    elevationAxis: ArrayLike | None = None,
+) -> NDArray[np.float64]:
+    """Conventional (Bartlett) beamforming spectrum."""
 
-    Parameters:
-        signal (np.ndarray): The received signal matrix with dimensions (numVirtualAntennas, numChirpsPerFrame).
-        steering_vector (np.ndarray): The steering vector matrix with dimensions
-                                       (numAngleBins, numVirtualAntennas).
-
-    Returns:
-        tuple[np.ndarray, np.ndarray]:
-            - power_spectrum (np.ndarray): The Bartlett power spectrum with shape (numAngleBins,numChirpsPerFrame),
-                                           representing the signal power for each angle bin.
-            - weight (np.ndarray): The normalized steering weights used for beamforming,
-                                   with shape (numVirtualAntennas, numAngleBins).
-
-    Raises:
-        ValueError: If input dimensions are invalid or mismatched.
-    """
-    # Validate signal dimensions
-    if signal.ndim != 2:
-        signal = signal.reshape((-1, 1))
-        # raise ValueError("The input 'signal' must be a 2D array with shape (numVirtualAntennas, numChirpsPerFrame).")
-
-    # Validate steering vector dimensions
-    if steering_vector.ndim != 2:
-        raise ValueError(
-            "The input 'steering_vector' must be a 2D array with shape (numAngleBins, numVirtualAntennas)."
-        )
-
-    numVirtualAntennas, numAngleBins = steering_vector.shape
-    if signal.shape[0] != numVirtualAntennas:
-        raise ValueError(
-            "The number of antennas in 'signal' and 'steering_vector' must match."
-        )
-
-    weight = steering_vector / numVirtualAntennas
-
-    # Compute spatial covariance matrix
-    Rxx = compute_spatial_covariance(signal, fb_avg=False)
-
-    # Compute Bartlett Power Spectrum
-    # Option 1: Power = np.sum((steering_vector.T.conj() @ Rxx_inv) * steering_vector, axis=0)
-    # Option 2: Power = np.abs(steering_vector.T.conj() @ signal)**2
-    power = np.einsum('ij,ij->i', steering_vector.T.conj(), (Rxx @ steering_vector).T)
-
-    power_spectrum = np.abs(power)
-
-    return power_spectrum, weight
+    covariance = spatial_covariance(signal)
+    vectors, shape = _search_vectors(
+        arrayPositions, wavelength, azimuthAxis, elevationAxis
+    )
+    spectrum = np.einsum(
+        "gm,mn,gn->g", vectors.conj(), covariance, vectors, optimize=True
+    ).real
+    return np.maximum(spectrum, 0.0).reshape(shape)
 
 
 def doa_capon(
-    signal: np.ndarray, steering_vector: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Compute the Direction of Arrival (DoA) using the Bartlett method.
+    signal: ArrayLike,
+    *,
+    arrayPositions: ArrayLike,
+    wavelength: float,
+    azimuthAxis: ArrayLike,
+    elevationAxis: ArrayLike | None = None,
+    diagonalLoading: float = 1e-3,
+) -> NDArray[np.float64]:
+    """MVDR/Capon spatial spectrum."""
 
-    Parameters:
-        signal (np.ndarray): The received signal matrix with dimensions (numVirtualAntennas, numSamplesPerChirp).
-        steering_vector (np.ndarray): The steering vector matrix with dimensions
-                                       (numAngleBins, numVirtualAntennas).
-
-    Returns:
-        tuple[np.ndarray, np.ndarray]:
-            - power_spectrum (np.ndarray): The Bartlett power spectrum with shape (numAngleBins,numSamplesPerChirp),
-                                           representing the signal power for each angle bin.
-            - weight (np.ndarray): The normalized steering weights used for beamforming,
-                                   with shape (numVirtualAntennas, numAngleBins).
-
-    Raises:
-        ValueError: If input dimensions are invalid or mismatched.
-    """
-    # Validate signal dimensions
-    if signal.ndim != 2:
-        signal = signal.reshape((-1, 1))
-        # raise ValueError("The input 'signal' must be a 2D array with shape (numVirtualAntennas, numSamplesPerChirp).")
-
-    # Validate steering vector dimensions
-    if steering_vector.ndim != 2:
-        raise ValueError(
-            "The input 'steering_vector' must be a 2D array with shape (numAngleBins, numVirtualAntennas)."
-        )
-
-    # Compute spatial covariance matrix
-    Rxx = compute_spatial_covariance(signal, fb_avg=True)
-
-    try:
-        Rxx_inv = np.linalg.pinv(Rxx)
-    except np.linalg.LinAlgError:
-        # Raise an error if the covariance matrix is singular or not invertible
-        raise ValueError('Covariance matrix is singular or not invertible.')
-
-    first = Rxx_inv @ steering_vector
-    power = np.reciprocal(np.einsum('ij,ij->i', steering_vector.T.conj(), first.T))
-    weight = np.matmul(first, power)
-
-    # response = watt2db(np.abs(power_spectrum))
-    power_spectrum = np.abs(power)
-
-    return power_spectrum, weight
+    covariance = spatial_covariance(signal)
+    loading = (
+        diagonalLoading
+        * max(float(np.trace(covariance).real), 1.0)
+        / covariance.shape[0]
+    )
+    inverse = np.linalg.pinv(covariance + loading * np.eye(covariance.shape[0]))
+    vectors, shape = _search_vectors(
+        arrayPositions, wavelength, azimuthAxis, elevationAxis
+    )
+    denominator = np.einsum(
+        "gm,mn,gn->g", vectors.conj(), inverse, vectors, optimize=True
+    ).real
+    return (1.0 / np.maximum(denominator, np.finfo(float).tiny)).reshape(shape)
 
 
-# ######################################################################
-# MUSIC
-# ######################################################################
 def doa_music(
-    signal: np.ndarray, steering_vector: np.ndarray, num_targets: int = 1
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Compute the Direction of Arrival (DoA) using the MUSIC algorithm.
+    signal: ArrayLike,
+    *,
+    arrayPositions: ArrayLike,
+    wavelength: float,
+    azimuthAxis: ArrayLike,
+    elevationAxis: ArrayLike | None = None,
+    numSources: int = 1,
+    forwardBackward: bool = False,
+) -> NDArray[np.float64]:
+    """MUSIC pseudospectrum for arbitrary array geometry."""
 
-    Parameters:
-        signal (np.ndarray): The received signal matrix with dimensions (numVirtualAntennas, numSamplesPerChirp).
-        steering_vector (np.ndarray): The steering vector matrix with dimensions
-                                      (numAngleBins, numVirtualAntennas).
-        num_targets (int): Number of expected targets (default: 1).
+    covariance = spatial_covariance(signal, forwardBackward=forwardBackward)
+    channels = covariance.shape[0]
+    if not 1 <= numSources < channels:
+        raise ValueError("numSources must be in [1, numChannels).")
+    _, eigenvectors = np.linalg.eigh(covariance)
+    noiseSubspace = eigenvectors[:, : channels - numSources]
+    vectors, shape = _search_vectors(
+        arrayPositions, wavelength, azimuthAxis, elevationAxis
+    )
+    projection = vectors.conj() @ noiseSubspace
+    denominator = np.sum(np.abs(projection) ** 2, axis=1)
+    return (1.0 / np.maximum(denominator, np.finfo(float).tiny)).reshape(shape)
 
-    Returns:
-        tuple[np.ndarray, np.ndarray]:
-            - power_spectrum (np.ndarray): The MUSIC power spectrum with shape (numAngleBins,),
-                                           representing the signal power for each angle bin.
-            - noise_subspace (np.ndarray): The noise subspace eigenvectors.
 
-    Raises:
-        ValueError: If input dimensions are invalid or mismatched.
-    """
-    # Validate signal dimensions
-    if signal.ndim != 2:
-        signal = signal.reshape((-1, 1))
+def spatial_smoothing(
+    signal: ArrayLike,
+    *,
+    subarraySize: int,
+    forwardBackward: bool = True,
+) -> NDArray[np.complex128]:
+    """Spatially smooth ULA snapshots for coherent-source estimation."""
 
-    if steering_vector.ndim != 2:
-        raise ValueError(
-            "The input 'steering_vector' must be a 2D array with shape (numAngleBins, numVirtualAntennas)."
+    array = np.asarray(signal)
+    if array.ndim == 1:
+        array = array[None, :]
+    if array.ndim != 2:
+        raise ValueError("signal must have shape (snapshots, channels).")
+    channels = array.shape[1]
+    if not 1 < subarraySize <= channels:
+        raise ValueError("subarraySize must lie in [2, channels].")
+    covariance = np.zeros((subarraySize, subarraySize), dtype=np.complex128)
+    count = channels - subarraySize + 1
+    for start in range(count):
+        covariance += spatial_covariance(array[:, start : start + subarraySize])
+    covariance /= count
+    if forwardBackward:
+        exchange = np.fliplr(np.eye(subarraySize))
+        covariance = np.asarray(
+            0.5 * (covariance + exchange @ covariance.conj() @ exchange),
+            dtype=np.complex128,
+        )
+    return covariance
+
+
+def doa_esprit(
+    signal: ArrayLike,
+    *,
+    numSources: int,
+    spacing: float,
+    wavelength: float,
+) -> NDArray[np.float64]:
+    """Estimate ULA azimuths with rotational-invariance ESPRIT."""
+
+    covariance = spatial_covariance(signal, forwardBackward=True)
+    channels = covariance.shape[0]
+    if not 1 <= numSources < channels or spacing <= 0.0 or wavelength <= 0.0:
+        raise ValueError("Invalid ESPRIT dimensions or physical spacing.")
+    _, eigenvectors = np.linalg.eigh(covariance)
+    signalSubspace = eigenvectors[:, -numSources:]
+    rotation = np.linalg.pinv(signalSubspace[:-1]) @ signalSubspace[1:]
+    phase = np.angle(np.linalg.eigvals(rotation))
+    angles = np.arcsin(np.clip(phase * wavelength / (2.0 * np.pi * spacing), -1.0, 1.0))
+    return np.sort(angles.real)
+
+
+def combine_duplicate_channels(
+    signal: ArrayLike,
+    positions: ArrayLike,
+    *,
+    policy: Literal["first", "noncoherent", "coherent"] = "coherent",
+    tolerance: float = 1e-9,
+) -> tuple[NDArray[Any], NDArray[np.float64]]:
+    """Combine repeated virtual phase centers according to ``policy``."""
+
+    data = np.asarray(signal)
+    locations = np.asarray(positions, dtype=float)
+    if data.shape[-1] != locations.shape[0]:
+        raise ValueError("Signal channel count does not match positions.")
+    keys = np.rint(locations / tolerance).astype(np.int64)
+    groups: dict[tuple[int, int, int], list[int]] = {}
+    for index, key in enumerate(keys):
+        groupKey = (int(key[0]), int(key[1]), int(key[2]))
+        groups.setdefault(groupKey, []).append(index)
+    combined = []
+    uniquePositions = []
+    for indices in groups.values():
+        values = data[..., indices]
+        if policy == "first":
+            value = values[..., 0]
+        elif policy == "coherent":
+            value = np.mean(values, axis=-1)
+        elif policy == "noncoherent":
+            amplitude = np.sqrt(np.mean(np.abs(values) ** 2, axis=-1))
+            value = amplitude * np.exp(1j * np.angle(values[..., 0]))
+        else:
+            raise ValueError(f"Unknown duplicate policy {policy!r}.")
+        combined.append(value)
+        uniquePositions.append(np.mean(locations[indices], axis=0))
+    return np.stack(combined, axis=-1), np.asarray(uniquePositions)
+
+
+def _geometry(
+    positions: NDArray[np.float64], tolerance: float
+) -> tuple[str, float | None, float | None]:
+    y = np.unique(np.rint(positions[:, 1] / tolerance).astype(np.int64)) * tolerance
+    z = np.unique(np.rint(positions[:, 2] / tolerance).astype(np.int64)) * tolerance
+
+    def uniform(values: NDArray[np.float64]) -> float | None:
+        if values.size < 2:
+            return None
+        differences = np.diff(np.sort(values))
+        return (
+            float(differences[0]) if np.allclose(differences, differences[0]) else None
         )
 
-    numVirtualAntennas = signal.shape[0]
-    numAngleBins = steering_vector.shape[0]
-    if steering_vector.shape[1] != numVirtualAntennas:
-        raise ValueError(
-            "The number of antennas in 'signal' and 'steering_vector' must match."
+    dy, dz = uniform(y), uniform(z)
+    keys = np.unique(np.rint(positions[:, 1:3] / tolerance).astype(np.int64), axis=0)
+    if z.size == 1 and dy is not None:
+        return "ula", dy, None
+    if keys.shape[0] == y.size * z.size and dy is not None and dz is not None:
+        return "ura", dy, dz
+    return "sparse", None, None
+
+
+def _peaks(
+    spectrum: NDArray[np.float64],
+    azimuthAxis: NDArray[np.float64],
+    elevationAxis: NDArray[np.float64],
+    count: int,
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    maxima = spectrum >= ndimage.maximum_filter(spectrum, size=3, mode="nearest")
+    indices = np.argwhere(maxima)
+    if indices.size == 0:
+        indices = np.asarray([np.unravel_index(np.argmax(spectrum), spectrum.shape)])
+    powers = spectrum[indices[:, 0], indices[:, 1]]
+    order = np.argsort(powers, kind="stable")[::-1][:count]
+    indices = indices[order]
+    return (
+        azimuthAxis[indices[:, 1]],
+        elevationAxis[indices[:, 0]],
+        powers[order],
+    )
+
+
+def estimate_doa(
+    signal: ArrayLike,
+    *,
+    radar: Radar,
+    method: DoAMethod | None = None,
+    numSources: int | None = None,
+) -> DoAResult:
+    """Select and run a model-aware DoA method for one RD cell or snapshots."""
+
+    config = radar.processing.doa
+    selected = method or config.method
+    count = numSources or config.numSources
+    data, positions = combine_duplicate_channels(
+        signal,
+        radar.virtualArray,
+        policy=config.duplicatePolicy,
+        tolerance=max(radar.wavelength * 1e-6, 1e-12),
+    )
+    tolerance = max(radar.wavelength * 1e-6, 1e-12)
+    geometry, dy, dz = _geometry(positions, tolerance)
+    if selected == "auto":
+        selected = "fft" if geometry in {"ula", "ura"} else "bartlett"
+    azimuthAxis = np.linspace(*config.azimuthFov, config.azimuthBins)
+    elevationAxis = np.linspace(*config.elevationFov, config.elevationBins)
+    snapshots = data[None, :] if data.ndim == 1 else data.reshape(-1, data.shape[-1])
+
+    if selected == "fft" and geometry == "ula":
+        if dy is None:
+            raise RuntimeError("ULA geometry did not provide an element spacing.")
+        order = np.argsort(positions[:, 1])
+        size = radar.processing.fft.azimuthFftSize
+        weights = np.hanning(order.size)
+        transform = np.fft.fftshift(
+            np.fft.fft(snapshots[:, order] * weights, n=size, axis=1), axes=1
         )
+        spectrum = np.sum(np.abs(transform) ** 2, axis=0, keepdims=True)
+        spatial = (np.arange(size, dtype=float) - size // 2) / size
+        azimuthAxis = np.arcsin(
+            np.clip(spatial * radar.wavelength / float(dy), -1.0, 1.0)
+        )
+        elevationAxis = np.asarray([0.0])
+    elif selected == "fft" and geometry == "ura":
+        if dy is None or dz is None:
+            raise RuntimeError("URA geometry did not provide both element spacings.")
+        yValues = np.sort(np.unique(positions[:, 1]))
+        zValues = np.sort(np.unique(positions[:, 2]))
+        grid = np.empty((snapshots.shape[0], zValues.size, yValues.size), dtype=complex)
+        for channel, position in enumerate(positions):
+            yIndex = int(np.argmin(np.abs(yValues - position[1])))
+            zIndex = int(np.argmin(np.abs(zValues - position[2])))
+            grid[:, zIndex, yIndex] = snapshots[:, channel]
+        shape = (
+            radar.processing.fft.elevationFftSize,
+            radar.processing.fft.azimuthFftSize,
+        )
+        transform = np.fft.fftshift(
+            np.fft.fft2(grid, s=shape, axes=(-2, -1)), axes=(-2, -1)
+        )
+        spectrum = np.sum(np.abs(transform) ** 2, axis=0)
+        uy = (
+            (np.arange(shape[1]) - shape[1] // 2)
+            / shape[1]
+            * radar.wavelength
+            / float(dy)
+        )
+        uz = (
+            (np.arange(shape[0]) - shape[0] // 2)
+            / shape[0]
+            * radar.wavelength
+            / float(dz)
+        )
+        azimuthAxis = np.arcsin(np.clip(uy, -1.0, 1.0))
+        elevationAxis = np.arcsin(np.clip(uz, -1.0, 1.0))
+    elif selected == "esprit":
+        if geometry != "ula" or dy is None:
+            raise ValueError("ESPRIT requires a uniform linear array.")
+        azimuth = doa_esprit(
+            snapshots, numSources=count, spacing=dy, wavelength=radar.wavelength
+        )
+        spectrum = np.zeros((1, azimuthAxis.size), dtype=float)
+        bins = np.asarray([np.argmin(np.abs(azimuthAxis - item)) for item in azimuth])
+        spectrum[0, bins] = 1.0
+        elevationAxis = np.asarray([0.0])
+    else:
+        if selected == "bartlett":
+            spectrum = doa_bartlett(
+                snapshots,
+                arrayPositions=positions,
+                wavelength=radar.wavelength,
+                azimuthAxis=azimuthAxis,
+                elevationAxis=elevationAxis,
+            )
+        elif selected == "capon":
+            spectrum = doa_capon(
+                snapshots,
+                arrayPositions=positions,
+                wavelength=radar.wavelength,
+                azimuthAxis=azimuthAxis,
+                elevationAxis=elevationAxis,
+                diagonalLoading=config.diagonalLoading,
+            )
+        elif selected == "music":
+            spectrum = doa_music(
+                snapshots,
+                arrayPositions=positions,
+                wavelength=radar.wavelength,
+                azimuthAxis=azimuthAxis,
+                elevationAxis=elevationAxis,
+                numSources=count,
+            )
+        else:
+            raise ValueError(
+                f"Unsupported DoA method {selected!r} for {geometry} geometry."
+            )
 
-    # Compute spatial covariance matrix
-    Rxx = compute_spatial_covariance(signal, fb_avg=True)
+    spectrum = np.asarray(spectrum, dtype=float)
+    azimuth, elevation, power = _peaks(spectrum, azimuthAxis, elevationAxis, count)
+    return DoAResult(
+        azimuth=azimuth,
+        elevation=elevation,
+        power=power,
+        spectrum=spectrum,
+        azimuthAxis=azimuthAxis,
+        elevationAxis=elevationAxis,
+        method=selected,
+    )
 
-    # Eigen decomposition
-    eigval, eigvec = np.linalg.eigh(Rxx)
-    idx = np.argsort(eigval)[::-1]
-    eigval = eigval[idx]
-    eigvec = eigvec[:, idx]
 
-    # Signal and noise subspaces
-    signal_subspace = eigvec[:, :num_targets]
-    noise_subspace = eigvec[:, num_targets:]
-
-    # MUSIC spectrum calculation
-    power_spectrum = np.zeros(numAngleBins, dtype=np.float64)
-    for i in range(numAngleBins):
-        sv = steering_vector[i, :].reshape(-1, 1)
-        denom = np.linalg.norm(noise_subspace.conj().T @ sv) ** 2
-        power_spectrum[i] = 1.0 / denom if denom > 0 else 0.0
-
-    return power_spectrum, noise_subspace
-
-# def doa_esprit(
-#     signal: np.ndarray, order: int, num_targets: int = 1
-# ) -> np.ndarray:
-#     """
-#     Estimate Direction of Arrival (DoA) using the ESPRIT algorithm.
-
-#     Parameters:
-#         signal (np.ndarray): The received signal matrix with dimensions (numVirtualAntennas, numSamplesPerChirp).
-#         order (int): Subarray order (number of rows in each subarray, typically numVirtualAntennas).
-#         num_targets (int): Number of sources/targets to estimate.
-
-#     Returns:
-#         np.ndarray: Estimated normalized angular frequencies (DoA roots).
-
-#     Raises:
-#         ValueError: If input dimensions are invalid or mismatched.
-#     """
-#     # Validate signal dimensions
-#     if signal.ndim != 2:
-#         signal = signal.reshape((-1, 1))
-
-#     numVirtualAntennas, numSamples = signal.shape
-#     if order > numVirtualAntennas or order < 2:
-#         raise ValueError("Order must be between 2 and numVirtualAntennas.")
-
-#     # Compute spatial covariance matrix
-#     Rxx = compute_spatial_covariance(signal, fb_avg=True)
-
-#     # Eigen decomposition
-#     eigval, eigvec = np.linalg.eigh(Rxx)
-#     idx = np.argsort(eigval)[::-1]
-#     eigvec = eigvec[:, idx]
-
-#     # Signal subspace
-#     signal_subspace = eigvec[:, :num_targets]
-
-#     # Form subarrays
-#     s1 = signal_subspace[0:order-1, :]
-#     s2 = signal_subspace[1:order, :]
-
-#     # Solve for rotational invariance
-#     # s1 * Psi ≈ s2
-#     Psi, residuals, rank, s = np.linalg.lstsq(s1, s2, rcond=None)
-#     roots, _ = np.linalg.eig(Psi)
-
-#     return roots
+__all__ = [
+    "DoAResult",
+    "combine_duplicate_channels",
+    "doa_bartlett",
+    "doa_capon",
+    "doa_esprit",
+    "doa_music",
+    "estimate_doa",
+    "spatial_covariance",
+    "spatial_smoothing",
+    "steering_vector",
+]
