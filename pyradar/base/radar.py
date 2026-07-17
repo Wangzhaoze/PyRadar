@@ -227,8 +227,12 @@ class Radar:
         )
         y = np.unique(keys[:, 0])
         z = np.unique(keys[:, 1])
-        ySpacing = _uniform_spacing(keys[:, 0] * tolerance, tolerance)
-        zSpacing = _uniform_spacing(keys[:, 1] * tolerance, tolerance)
+        ySpacing = _uniform_spacing(
+            np.asarray(keys[:, 0] * tolerance, dtype=np.float64), tolerance
+        )
+        zSpacing = _uniform_spacing(
+            np.asarray(keys[:, 1] * tolerance, dtype=np.float64), tolerance
+        )
         if z.size == 1 and ySpacing is not None:
             return "ula"
         if (
