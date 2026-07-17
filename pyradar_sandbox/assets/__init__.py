@@ -1,1 +1,0 @@
-P911GT = "pyradar_sandbox/assets/P911GT"

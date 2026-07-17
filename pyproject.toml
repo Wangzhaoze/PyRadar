@@ -32,6 +32,7 @@ dependencies = [
 
 [project.optional-dependencies]
 examples = ["matplotlib>=3.7"]
+simulation = ["trimesh>=4.0"]
 test = [
     "build>=1.2",
     "mypy>=1.10",
@@ -63,7 +64,7 @@ include-package-data = false
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["pyradar", "pyradar.*"]
-exclude = ["archieves*", "examples*", "pyradar_sandbox*", "tests*"]
+exclude = ["archieves*", "examples*", "tests*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -73,7 +74,6 @@ norecursedirs = [
     "dist",
     "docs/_build",
     "examples",
-    "pyradar_sandbox",
 ]
 addopts = "-p no:cacheprovider --basetemp=.pytest-tmp"
 markers = [
@@ -99,7 +99,6 @@ extend-exclude = [
     "archieves",
     "docs/examples/data",
     "docs/examples/output",
-    "pyradar_sandbox",
 ]
 
 [tool.ruff.lint]
@@ -117,4 +116,4 @@ no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 ignore_missing_imports = true
-exclude = "^(archieves|pyradar_sandbox)/"
+exclude = "^archieves/"

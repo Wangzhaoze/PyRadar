@@ -40,6 +40,8 @@ tutorials/calibration
 tutorials/pointcloud
 tutorials/clustering
 tutorials/tracking
+tutorials/simulation
+tutorials/time-frequency
 ```
 
 ```{toctree}
@@ -50,6 +52,7 @@ api/index
 release-notes
 development/release
 development/native-acceleration
+development/sandbox-migration
 ```
 
 ## Two API levels

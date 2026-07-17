@@ -6,7 +6,7 @@ import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import yaml
@@ -26,6 +26,11 @@ from .processing import (
 from .sampler import Sampler
 from .transceivers import Transceivers
 from .waveform import FMCW, SPEED_OF_LIGHT
+
+if TYPE_CHECKING:
+    from pyradar.sim import PointTarget, TargetScene
+
+    from .cube import ADCFrame
 
 
 def _uniform_spacing(values: NDArray[np.float64], tolerance: float) -> float | None:
@@ -310,6 +315,21 @@ class Radar:
         """Process one frame with a fresh pipeline."""
 
         return self.build_pipeline().process(adc, dims=dims, **kwargs)
+
+    def simulate(
+        self,
+        targets: PointTarget | Sequence[PointTarget] | TargetScene,
+        **kwargs: Any,
+    ) -> ADCFrame:
+        """Synthesize canonical ADC samples using this radar model.
+
+        The import is intentionally local so the physical model remains usable
+        without loading optional simulation backends.
+        """
+
+        from pyradar.sim import simulate_adc
+
+        return simulate_adc(self, targets, **kwargs)
 
 
 def _ti2243_positions(wavelength: float, layout: str) -> Transceivers:

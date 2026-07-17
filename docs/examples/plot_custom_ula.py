@@ -23,7 +23,7 @@ from pyradar.base import (
     Transceivers,
 )
 from pyradar.base.waveform import SPEED_OF_LIGHT
-from pyradar.rsp.doa import steering_vector
+from pyradar.sim import PointTarget
 
 
 def make_radar() -> Radar:
@@ -80,51 +80,18 @@ def make_radar() -> Radar:
     )
 
 
-def synthesize_target(
-    radar: Radar,
-    *,
-    rangeBin: int,
-    dopplerBin: int,
-    azimuth: float,
-) -> np.ndarray:
-    """Generate canonical TDM ADC while retaining emission-time phase."""
-
-    sample = np.arange(radar.sampler.numSamples)
-    rangeTone = np.exp(2j * np.pi * rangeBin * sample / radar.sampler.numSamples)
-    dopplerFrequency = dopplerBin / (radar.sampler.numLoops * radar.slowTimeInterval)
-    response = steering_vector(radar.virtualArray, radar.wavelength, azimuth, 0.0)
-    adc = np.empty(
-        (
-            radar.sampler.numLoops,
-            radar.mimo.numEmissions,
-            radar.mimo.numRx,
-            radar.sampler.numSamples,
-        ),
-        dtype=np.complex128,
-    )
-    offsets = radar.mimo.tx_time_offsets(radar.waveform.chirpInterval)
-    for loop in range(radar.sampler.numLoops):
-        for emission, txId in enumerate(radar.mimo.txOrder):
-            time = loop * radar.slowTimeInterval + offsets[txId]
-            motion = np.exp(2j * np.pi * dopplerFrequency * time)
-            for rxId in range(radar.mimo.numRx):
-                channel = txId * radar.mimo.numRx + rxId
-                adc[loop, emission, rxId] = 100 * motion * response[channel] * rangeTone
-    return adc
-
-
 radar = make_radar()
-adc = synthesize_target(
-    radar,
-    rangeBin=18,
-    dopplerBin=-3,
-    azimuth=np.deg2rad(24),
+rangeBin = 18
+dopplerBin = -3
+azimuth = np.deg2rad(24)
+direction = np.array([np.cos(azimuth), np.sin(azimuth), 0.0])
+target = PointTarget(
+    position=rangeBin * radar.rangeBinSize * direction,
+    velocity=-dopplerBin * radar.velocityBinSize * direction,
+    rcs=10_000.0,
 )
-result = radar.process_adc(
-    adc,
-    dims=("loop", "emission", "rx", "sample"),
-    frameId=0,
-)
+adc = radar.simulate(target, noisePower=1e-3, seed=7, frameId=0)
+result = radar.process_adc(adc)
 
 rd = result.rangeDopplerCube.power.mean(axis=2)
 ra = result.rangeAngleCube.power

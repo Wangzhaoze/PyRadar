@@ -20,7 +20,6 @@ venv/
 
 .vscode/
 archieves/
-pyradar_sandbox/
 
 docs/_build/
 docs/auto_examples/
@@ -40,5 +39,3 @@ docs/examples/data/ColoRadar/**/lidar/
 docs/examples/data/ColoRadar/**/single_chip/
 docs/examples/data/ColoRadar/calib/transforms/
 docs/examples/configs/TI-*.yaml
-
-pyradar_sandbox/assets/*

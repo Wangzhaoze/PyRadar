@@ -9,4 +9,5 @@ utility adapters. Dataset-specific behavior is confined to :mod:`pyradar.utils.i
 
    base
    rsp
+   sim
    utils

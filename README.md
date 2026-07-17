@@ -41,7 +41,28 @@ rangeDoppler = rsp.range_doppler_fft(adc, radar=radar, dims=dims)
 - CA-, GOCA-, SOCA-, and OS-CFAR with noise, threshold, SNR, and NMS outputs
 - FLU point clouds in SI units, deterministic velocity-aware DBSCAN, and
   constant-velocity 2D/3D multi-target tracking
+- Radar-aware point-target/path ADC simulation, STFT and micro-Doppler analysis,
+  zoom FFT, point-cloud registration, and pure TI raw-capture decoders
 - Readers for ColoRadar, ColoRadar+, RaDelft, and RAMPCNN/CRUW captures
+
+## Simulate with the same model
+
+```python
+import numpy as np
+
+from pyradar.sim import PointTarget
+
+target = PointTarget(
+    position=np.array([12.0, 1.5, 0.0]),
+    velocity=np.array([-1.0, 0.0, 0.0]),
+    rcs=3.0,
+)
+adc = radar.simulate(target, noisePower=1e-4, seed=5)
+result = radar.process_adc(adc)
+```
+
+Mesh ray tracing is optional: install `.[simulation]` to add the Trimesh CPU
+backend. Core point-target and path simulation requires only NumPy.
 
 ## Installation
 
@@ -55,6 +76,8 @@ For development:
 
 ```bash
 python -m pip install -e ".[test,docs,examples]"
+# Optional mesh ray tracing backend:
+python -m pip install -e ".[simulation]"
 python -m pytest
 python -m build
 ```

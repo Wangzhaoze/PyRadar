@@ -82,6 +82,27 @@ The canonical ADC shape is always `loop/emission/rx/sample`. A missing dimension
 is inserted only when the model proves it is a singleton. This avoids silently
 swapping receivers and chirps when two axes happen to have equal lengths.
 
+## Simulate a modeled target
+
+The same radar can generate canonical ADC for a point target. MIMO codes,
+emission timing, bistatic TX/RX geometry, and sampled-band phase all come from
+the model:
+
+```python
+from pyradar.sim import PointTarget
+
+target = PointTarget(
+    position=np.array([20.0, 3.0, 0.5]),
+    velocity=np.array([-2.0, 0.0, 0.0]),
+    rcs=5.0,
+)
+synthetic = radar.simulate(target, noisePower=1e-4, seed=8)
+syntheticResult = radar.process_adc(synthetic)
+```
+
+See [Radar-aware simulation](tutorials/simulation.md) for propagation paths,
+quantization, scene sampling, and optional mesh ray tracing.
+
 ## Load YAML or JSON
 
 {meth}`pyradar.base.Radar.from_config` accepts the same camelCase field names as
