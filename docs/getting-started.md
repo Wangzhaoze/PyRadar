@@ -1,4 +1,4 @@
-# Getting started
+# Getting Started
 
 ## Install
 
@@ -151,3 +151,12 @@ result = frame.radar.process_adc(frame)
 ```
 
 See [Data and licenses](data-and-licenses.md) for expected local layouts.
+
+## Continue from here
+
+```{toctree}
+:maxdepth: 1
+
+radar-model
+data-and-licenses
+```
