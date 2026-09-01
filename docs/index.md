@@ -19,41 +19,59 @@ All public values use SI units and radians. Coordinates are right-handed FLU:
 
 ```{toctree}
 :maxdepth: 2
-:caption: Start here
+:hidden:
 
 getting-started
-radar-model
-data-and-licenses
+tutorials/index
 auto_examples/index
-```
-
-```{toctree}
-:maxdepth: 2
-:caption: Algorithm tutorials
-
-tutorials/fmcw
-tutorials/fft-windows
-tutorials/mimo
-tutorials/virtual-array-doa
-tutorials/cfar
-tutorials/calibration
-tutorials/pointcloud
-tutorials/clustering
-tutorials/tracking
-tutorials/simulation
-tutorials/time-frequency
-```
-
-```{toctree}
-:maxdepth: 2
-:caption: Reference
-
 api/index
-release-notes
-development/release
-development/native-acceleration
-development/sandbox-migration
+project
 ```
+
+## Documentation
+
+::::{grid} 1 2 2 2
+:gutter: 3
+
+:::{grid-item-card} Getting Started
+:link: getting-started
+:link-type: doc
+
+Install `pyradar`, define a radar model, process ADC data, and understand the
+core data conventions.
+:::
+
+:::{grid-item-card} User Guide
+:link: tutorials/index
+:link-type: doc
+
+Learn FMCW processing, MIMO and DoA, CFAR, point-cloud generation, tracking,
+simulation, and time-frequency analysis.
+:::
+
+:::{grid-item-card} Examples
+:link: auto_examples/index
+:link-type: doc
+
+Browse executable end-to-end examples and dataset-oriented workflows.
+:::
+
+:::{grid-item-card} API Reference
+:link: api/index
+:link-type: doc
+
+Look up radar-model contracts, signal-processing functions, simulation APIs,
+and utility adapters.
+:::
+
+:::{grid-item-card} Project
+:link: project
+:link-type: doc
+
+Read release notes and contributor-facing development documentation.
+:::
+
+::::
 
 ## Two API levels
 
