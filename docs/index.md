@@ -30,48 +30,16 @@ project
 
 ## Documentation
 
-::::{grid} 1 2 2 2
-:gutter: 3
-
-:::{grid-item-card} Getting Started
-:link: getting-started
-:link-type: doc
-
-Install `pyradar`, define a radar model, process ADC data, and understand the
-core data conventions.
-:::
-
-:::{grid-item-card} User Guide
-:link: tutorials/index
-:link-type: doc
-
-Learn FMCW processing, MIMO and DoA, CFAR, point-cloud generation, tracking,
-simulation, and time-frequency analysis.
-:::
-
-:::{grid-item-card} Examples
-:link: auto_examples/index
-:link-type: doc
-
-Browse executable end-to-end examples and dataset-oriented workflows.
-:::
-
-:::{grid-item-card} API Reference
-:link: api/index
-:link-type: doc
-
-Look up radar-model contracts, signal-processing functions, simulation APIs,
-and utility adapters.
-:::
-
-:::{grid-item-card} Project
-:link: project
-:link-type: doc
-
-Read release notes and contributor-facing development documentation.
-:::
-
-::::
+- **[Getting Started](getting-started.md)** — install `pyradar`, define a radar
+  model, process ADC data, and understand the core data conventions.
+- **[User Guide](tutorials/index.md)** — learn FMCW processing, MIMO and DoA,
+  CFAR, point-cloud generation, tracking, simulation, and time-frequency analysis.
+- **[Examples](auto_examples/index)** — browse executable end-to-end examples
+  and dataset-oriented workflows.
+- **[API Reference](api/index)** — look up radar-model contracts,
+  signal-processing functions, simulation APIs, and utility adapters.
+- **[Project](project.md)** — read release notes and contributor-facing
+  development documentation.
 
 ## Two API levels
 
